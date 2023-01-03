@@ -1,0 +1,110 @@
+.el-header {
+    background-color: #20A0FF;
+    /*background-color: #53c79f;*/
+    color: #fff;
+    line-height: 80px;
+    padding-left: 0;
+    height: 80px;
+}
+
+.el-aside {
+    color: #333;
+}
+
+.el-menu {
+    background-color: #eef1f6;
+}
+
+.el-main {
+    padding: 10px;
+}
+
+.el-submenu .el-menu-item:hover, .el-submenu__title:hover {
+    background-color: #d1dbe5;
+}
+
+.el-submenu .el-menu {
+    background-color: #e4e8f1;
+}
+
+.el-menu-item:focus, .el-menu-item:hover {
+    background-color: inherit;
+}
+
+.page-body {
+    position: fixed;
+    top: 80px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+}
+
+.header__logo {
+    position: relative;
+    float: left;
+    height: 80px;
+    width: 230px;
+    box-sizing: border-box;
+    padding-left: 10px;
+    padding-right: 20px;
+    border-color: hsla(62,77%,76%,.3);
+    border-right-width: 1px;
+    border-right-style: solid;
+    text-align: center;
+}
+
+.header__logo img {
+    width: 50px;
+    height: 50px;
+    z-index: 999;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.header__logo span {
+    font-size: 25px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.iframe-wrapper {
+    height: 100%;
+    /*padding-top: 65px;*/
+    /*margin-top: -65px;*/
+    box-sizing: border-box;
+}
+
+.el-tabs--border-card>.el-tabs__content {
+    padding: 0;
+}
+
+/*默认标签页不可关闭*/
+.el-tabs__item:first-child .el-icon-close {
+    display: none;
+}
+
+/*修复IE11下高度无法撑开*/
+.el-main {
+    box-sizing: border-box;
+    height: 100%;
+}
+.el-main .el-tabs {
+    height: 100%;
+    box-sizing: border-box;
+}
+.el-main .el-tabs .el-tabs__content {
+    height: 100%;
+    padding-top: 40px;
+    margin-top: -40px;
+    box-sizing: border-box;
+}
+.el-main .el-tabs .el-tabs__content .el-tab-pane {
+    height: 100%;
+}
+
+.el-tabs__nav-next, .el-tabs__nav-prev {
+    z-index: 99;
+    padding: 14px 0;
+}

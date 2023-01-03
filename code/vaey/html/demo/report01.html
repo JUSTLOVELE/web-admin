@@ -1,0 +1,364 @@
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>报表演示</title>
+    <link rel="stylesheet" href="../../lib/element-ui/element.css">
+    <script src="../../common/constant.js"></script>
+    <script src="../../common/utils.js"></script>
+    <script src="../../lib/vue/vue.js"></script>
+    <script src="../../lib/element-ui/element.js"></script>
+    <script src="../../lib/jquery/jquery3.5.1.js"></script>
+    <script src="../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../component/table/table.css">
+    <script src="../../component/table/table.js"></script>
+    <script src="../../component/formDialog/formDialog.js"></script>
+    <link rel="stylesheet" href="../../component/formDialog/formDialog.css">
+    <script src="../../lib/echarts/echarts.common.min.js"></script>
+</head>
+
+<body>
+    <div id="vue">
+        <base-component ref="base" :form="form" :table="table" :dialogs="dialogs" @current-row-change="currentRowChange"
+            @table-update="onTableUpdate">
+            <template slot="tableRightContainer">
+                <div id="chart" style="width: 100%; height: 100%;box-sizing: border-box;padding-top: 25px;"></div>
+            </template>
+        </base-component>
+    </div>
+
+    <script>
+        var vueObj = new Vue({
+            el: '#vue',
+
+            created: function () {},
+            data: function () {
+                var _this = this
+
+                return {
+                    currentRow: null,
+                    form: {
+                        //操作按钮
+                        buttons: [
+
+
+                            {
+                                label: '详情统计',
+                                click: function () {
+
+                                    if (!_this.currentRow) {
+                                        _this.$message.warning("请选择一条记录");
+                                        return
+                                    }
+                                    _this.queryDetail(_this.currentRow.location)
+                                }
+                                //     function () {
+
+                                // }
+                            },
+                            {
+                                label: '饼状图',
+                                click: function () {
+
+                                    if (!_this.currentRow) {
+                                        _this.$message.warning("请选择一条记录");
+                                        return
+                                    }
+                                    console.log(_this.currentRow)
+                                    _this.showPieChart(_this.currentRow)
+                                }
+                                //     function () {
+
+                                // }
+                            }
+                        ],
+                        //查询条件
+                        inputs: [],
+                        radios: [{
+                            name: 'time',
+                            value: 'M',
+
+                            options: [{
+                                label: '当月',
+                                value: 'M'
+                            }, {
+                                label: '当季',
+                                value: 'Q'
+                            }, {
+                                label: '当年',
+                                value: 'Y'
+                            }, {
+                                label: '其他',
+                                value: 'o'
+                            }]
+                        }],
+                        dates: [{
+                            name: '-daterange',
+                            type: 'daterange',
+                            startPlaceholder: '事件开始日期',
+                            endPlaceholder: '事件结束日期',
+                            dynamic: function (currentRow, form) {
+                                return form.time === 'o'
+                            }
+
+                        }, ]
+                    },
+                    table: {
+                        firstSelected: true,
+                        layout: {
+                            left: 13,
+                            right: 11
+                        },
+                        url: 'report01.json', //各排放口的停运率、故障率、数据传输率
+                        cols: [{
+                                prop: "location",
+                                label: "排放口",
+                            },
+                            {
+                                prop: "offLineRate",
+                                label: "停运率",
+                            },
+                            {
+                                prop: "errorRate",
+                                label: "故障率",
+                            },
+                            {
+                                prop: "transferRate",
+                                label: "数据传输率",
+                            }
+                        ],
+                        enumMap: {},
+                        pageSizes: [100]
+                        // dataProcess: function (datas) {
+                        //     console.log('dataProcess, ', datas)
+                        //     var total = 0
+                        //     datas.forEach(function (item) {
+                        //         total += item.number
+                        //     })
+                        //     datas.push({
+                        //         number: total,
+                        //         code: 'total',
+                        //         name: '汇总'
+                        //     })
+                        //     return datas
+                        // }
+                    },
+                    dialogs: [],
+                    byOrg: false
+                }
+            },
+            mounted: function () {
+                // var rows = this.$refs.base.getComp('_table').shareData()
+                // this.showChart('chart', GLOBAL_API.STAT.CITY_AND_COUNTY, '地级市统计', {value: 'number'})
+            },
+            methods: {
+
+                queryDetail: function (location) {
+
+                    var _this = this
+                    $.ajax({
+                        method: "GET",
+                        url: 'report01_detail.json',
+                        data: null,
+                        processData: false,
+                        contentType: false,
+                    }).done(function (resData) {
+                        var da = resData.datas
+                        _this.showChartByRows('chart', da, location, {
+                            name: 'location',
+                            value: 'offLineRate',
+                            isMulti: true
+                        })
+
+
+                    }).fail(function (res) {
+                        console.log("网络异常");
+
+                    })
+                },
+
+
+                currentRowChange: function (val) {
+                    this.currentRow = val
+                    // this.showChartByRow('chart', this.currentRow, '地区统计-' + this.currentRow.name)
+                },
+                onTableUpdate: function (data) {
+                    console.log('onTableUpdate ', data)
+                    this.showChartByRows('chart', data.rows, '按运维次数统计', {
+                        name: 'location',
+                        value: 'offLineRate',
+                        isMulti: false
+                    })
+                },
+                showChartByRows: function (chartId, rows, title, alias) {
+                    var _this = this
+                    var myChart = echarts.init(document.getElementById(chartId));
+                    var chartData = {
+                        xAxisData: [], //x轴标签
+                        seriesData: [], //x轴数据
+                    }
+                    var seriesData = {
+
+                        Data: []
+
+                    }
+                    var nameField = alias.name != null ? alias.name : 'name'
+                    var valueField = alias.value != null ? alias.value : 'value'
+                    var isMulti = alias.isMulti != null ? alias.isMulti : false
+
+                    var index = 0;
+                    rows.forEach(function (item) {
+                        var name = item["key"]
+                        if (!isMulti) {
+                            name = item[nameField]
+                        }
+                        chartData.xAxisData.push(name)
+                        if (!isMulti) {
+                            var value = item[valueField].substring(0, item[valueField].length - 1)
+                            chartData.seriesData.push(value)
+
+                        } else {
+                            var value = item.value;
+                            var values = value.split('-');
+
+                            for (var i = 0; i < values.length; i++) {
+
+                                var kv = values[i].split(';');
+                                if (index == 0) {
+                                    var tmpDate = []
+                                    tmpDate.push(kv[1])
+                                    seriesData.Data.push({
+                                        name: kv[0],
+                                        type: 'bar',
+                                        barWidth: '25%',
+                                        emphasis: {
+                                            focus: 'series'
+                                        },
+                                        data: tmpDate,
+                                    })
+                                } else {
+                                    seriesData.Data[i].data.push(kv[1])
+                                }
+
+                            }
+                            index++;
+                        }
+
+
+                    })
+                    if (!isMulti) {
+                        seriesData.Data.push({
+                            name: '运维次数',
+                            type: 'bar',
+                            barWidth: '25%',
+                            data: chartData.seriesData,
+                            showBackground: true, //是否展示背景
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        })
+                    }
+
+                    var option = {
+                        title: {
+                            text: title,
+                            // subtext: '总计：' + chartData.countNum,  //子标题
+                            left: 'center'
+                        },
+                        tooltip: {
+                            trigger: 'axis', //坐标轴触发，主要在柱状图，折线图等会使用类目轴的图表中使用
+                            axisPointer: { // 坐标轴指示器，坐标轴触发有效
+                                type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
+                            }
+                            // trigger: 'item',
+                            // formatter: "{a} <br/>{b} : {c} ({d}%)"
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: [{
+                            type: 'category',
+                            data: chartData.xAxisData,
+                            axisTick: {
+                                alignWithLabel: true
+                            },
+
+                            axisLabel: {
+                                interval: 0, //控制坐标轴刻度标签的显示间隔.设置成 0 强制显示所有标签。设置为 1，隔一个标签显示一个标签。设置为2，间隔2个标签。以此类推
+                                rotate: 45, //倾斜度 -90 至 90 默认为0
+                            },
+                        }],
+                        yAxis: [{
+                            type: 'value'
+                        }],
+                        series: seriesData.Data
+                    };
+
+                    myChart.setOption(option);
+                },
+                showPieChart: function (row) {
+
+                    echarts.init(document.getElementById('chart')).dispose(); // 销毁实例
+
+                    var myChart = echarts.init(document.getElementById('chart'));
+
+
+                    option = {
+                        title: {
+                            text: "饼状图",
+                            subtext: '总数：' + 56,
+                            left: 'center'
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b} : {c} ({d}%)'
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            left: 'right',
+                            right: 10,
+                            top: 30,
+                            bottom: 30,
+                            data: ["停运", "故障", "传输"], //设置旁边提示方块数据
+                        },
+                        series: [{
+
+                            type: 'pie',
+                            radius: '65%',
+                            data: [{
+                                name: "停运",
+                                value: 16
+                            }, {
+                                name: "故障",
+                                value: 13
+                            }, {
+                                name: "传输",
+                                value: 22
+                            }],
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }]
+                    };
+
+                    // 使用刚指定的配置项和数据显示图表。
+                    myChart.setOption(option);
+
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

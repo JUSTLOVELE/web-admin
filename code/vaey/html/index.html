@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>互医健康UI系统展示</title>
+    <link rel="stylesheet" href="../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../css/common.css">
+    <script src="../lib/babel-polyfill/polyfill.min.js"></script>
+    <script src="../lib/vue/vue.js"></script>
+    <script src="../lib/element-ui/element.js"></script>
+    <script src="../lib/jquery/jquery3.5.1.js"></script>
+    <link rel="stylesheet" href="../component/frame/frame.css">
+    <script src="../component/frame/frame.js"></script>
+</head>
+<body style="height: 100%;">
+    <div id="app">
+        <frame-component
+                ref="framecomponent"
+                :user-name="userName"
+                logo-txt="互医健康"
+                menu-url="/BNWeb/menuAction/createMenu"
+                default-src="default.html"
+                img-url="../img/hyjk.png"
+        ></frame-component>
+    </div>
+</body>
+
+<script>
+
+    var vm = new Vue({
+        el: '#app',
+        data: function () {
+
+            var _this = this
+            return {
+                userName: '可以修改用户名,我在index.html中'
+            }
+        },
+        created: function () {
+            var name = decodeURI(getUrlParams('userName'));
+            if(name !== "undefined") {
+                this.userName = name
+            }
+        },
+        methods: {
+
+        }
+    });
+
+    function getUrlParams(name) {
+        var param = window.location.search === "" ? window.location.hash : window.location.search;
+        if (param.length > 1) param = param.substring(param.indexOf("?") + 1).split("&");
+        var paramObj = {};
+        for (var i = 0; i < param.length; i++) {
+            var p = param[i].split("=");
+            paramObj[p[0]] = p[1];
+        }
+        if (name) return paramObj[name];
+        return paramObj;
+    }
+
+    window.addEventListener('message', function (e) {
+
+        var param = e.data;
+
+        switch (param.type) {
+            //1就是打开一个windows
+            case 1:
+                vm.$refs.framecomponent.openTaskWindow(param)
+                //vm.$refs.framecomponent.openTaskWindow(param.opId, param.title, param.nodeName, param.nodeKey)
+                break;
+            default:
+                break;
+        }
+    });
+</script>
+
+</html>

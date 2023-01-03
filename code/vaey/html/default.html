@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>默认首页</title>
+    <link rel="stylesheet" href="../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../css/common.css">
+    <script src="../lib/vue/vue.js"></script>
+    <script src="../lib/element-ui/element.js"></script>
+    <script src="../lib/jquery/jquery3.5.1.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="vue" style="padding: 25px;">
+    <div style="display: flex;">
+        <div style="flex: 1;height: 50px; padding: 15px 25px; box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);margin-right: 20px;">
+            <img src="../img/daichuli.png" alt="" style="float: left; height: 50px; margin-right: 20px;">
+            <p style="height: 50px; line-height: 1.1;">
+                <span style="font-size: 24px; color: red; margin-bottom: 5px">{{number}}</span>个<br>
+                <span style="line-height: 1.4">待处理事件</span>
+            </p>
+        </div>
+
+        <div style="flex: 1; padding: 15px 25px; box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);">
+            <img src="../img/tongzhi.png" alt="" style="float: left; height: 50px; margin-right: 20px;">
+            <p style="min-height: 50px; line-height: 1.1;">
+                <span style="font-size: 24px; margin-bottom: 5px;display: inline-block;">通知</span><br>
+                <span style="line-height: 1.4">通知内容</span>
+            </p>
+        </div>
+    </div>
+
+    <div style="margin-top: 35px;">
+        <div>
+            <p style="padding-bottom: 10px;border-bottom: 3px solid #E1E7E5;">
+                <img src="../img/mulu.png" alt="" style="height: 16px;margin-right: 10px;">
+                <span style="font-size: 28px;">待办事件</span>
+            </p>
+        </div>
+        <div style="border: 1px solid #eee;border-top: none;">
+            <div style="background-color: #F6FBFA;font-size: 18px;padding: 10px 25px;">
+                <span style="display: inline-block; width: 80%;">事件标题</span><span
+                    style="display: inline-block;width: 20%;text-align: center;">处理期限</span>
+            </div>
+            <template v-for="item in todos">
+                <div style="padding: 10px 25px;overflow: hidden;border-top: 1px solid #eee;">
+                    <div style="display: inline-block; width: 80%;float: left; height: 50px; line-height: 1.6;">
+                        <span style="font-size: 16px;font-weight: bold;cursor:pointer;"
+                              v-on:click="openTaskWindow($event)"
+                              :data-nodename="item.nodeName"
+                              :data-opid="item.opId"
+                              :data-nodekey="item.nodeKey"
+                              :data-title="item.eventTitle">{{item.eventTitle}}</span><br>
+                        <span style="color: #999;">{{item.nodeName}}</span>
+                    </div>
+                    <div style="display: inline-block; width: 20%;float: left;text-align: center;line-height: 50px;">
+                        <span v-if="item.limit >= 0" style="color: #13ce66">{{'剩余' + item.limit + '天'}}</span>
+                        <span v-else style="color: #e64340">{{'已超期' + Math.abs(item.limit) + '天'}}</span>
+                        <!--<span style="color: #13ce66">{{item.limit >= 0 ? '还有' + item.limit + '天' : '已超期' + item.limit + '天'}}</span>-->
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script>
+    var vueObj = new Vue({
+        el: '#vue',
+        created: function () {
+
+        },
+        data: function () {
+            var _this = this
+
+            return {
+                number: 0,
+                todos: []
+            }
+        },
+        mounted: function () {
+            var _this = this
+
+            _this.getData()
+
+            setInterval(function () { //10分钟刷新一次
+                _this.getData()
+            }, 600000)
+        },
+        methods: {
+            getData: function () {
+                //一开始和服务器获取待办数据
+                // var _this = this
+
+                // $.ajax({
+                //     method: "GET",
+                //     url: GLOBAL_API.USER.QUERY_TO_DEAL,
+                //     data: {},
+                // }).done(function (resData) {
+                //     // var resData = JSON.parse(res)
+                //     if (!(resData.code === 100 || resData.success)) {
+                //         _this.$message.error(resData.desc || '查询失败');
+                //         return
+                //     }
+                //     _this.number = resData.number
+                //     _this.todos = resData.datas
+                // }).fail(function (res) {
+                //     _this.$message.error("网络异常");
+                // })
+            },
+            openTaskWindow: function(event) {
+                //子组件调用父组件并弹出一个新的tab页
+                var param = {
+                    title: event.target.dataset.title,
+                    nodeName: event.target.dataset.nodename,
+                    opId: event.target.dataset.opid,
+                    nodeKey: event.target.dataset.nodekey,
+                    callUrl:"/BNWeb/frameAction/getFlowTitleAndUrl.do",
+                    type: 1
+                };
+                let targetOrigin="*";
+                window.parent.postMessage(param, targetOrigin);
+            }
+        },
+    })
+</script>
+</body>
+</html>

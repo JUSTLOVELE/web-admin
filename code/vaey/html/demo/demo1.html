@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>demo01</title>
+    <link rel="stylesheet" href="../../lib/element-ui/element.css">
+    <script src="../../common/constant.js"></script>
+    <script src="../../common/utils.js"></script>
+    <script src="../../lib/vue/vue.js"></script>
+    <script src="../../lib/element-ui/element.js"></script>
+    <script src="../../lib/jquery/jquery3.5.1.js"></script>
+    <script src="../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../component/table/table.css">
+    <script src="../../component/table/table.js"></script>
+    <script src="../../component/formDialog/formDialog.js"></script>
+    <link rel="stylesheet" href="../../component/formDialog/formDialog.css">
+</head>
+<body>
+<div id="app">
+    <base-component ref="base"
+                    @current-row-change="currentRowChange"
+                    @multi-row-change="multiRowChange"
+                    @row-click="rowClick"
+                    @query-param="queryParam"
+                    @test-call="testCall"
+                    :dialogs="dialogs"
+                    :table="table"
+                    :form="form">
+    </base-component>
+</div>
+<script>
+
+    var GLOBAL_ENUM = {
+        SEX: {
+            CONVERT_TEXT: 'sexText',
+            CONVERT: {
+                1: '男',
+                2: '女',
+            }
+        }
+    }
+
+    var vueObj = new Vue({
+        el: '#app',
+        data: function() {
+
+            function test2() {
+                alert("ok")
+            }
+
+            let _this = this
+            return {
+                currentRowChangecurrentRow: null,
+                multiRow: null,
+                form: {
+                    //操作按钮
+                    buttons: [
+                        {type: 'add', bindRef: 'addDialog', label: '无需选中弹出层'},
+                        {type: 'edit', bindRef: 'editDialog', label: '选中并带数据弹出层'},
+                        {type: 'delete', url: "http://localhost:12006/WS/api/deleteurl", fields: ['opId', 'title'], message:"弹出删除的提示,有默认提示可以不填写哈", label: '按钮四'},
+                        {type: 'notice', url: "http://localhost:12006/WS/api/noticeurl", fields: ['opId', 'title'], message:"弹出提示的提示,默认是删除,最后还是要写提示", label: '通知后台'},
+                        {type: 'delete', url: "http://localhost:12006/WS/api/deleteurl", fields: ['opId', 'title'], label: '按钮6', cancel(){
+                                console.log("删除的取消提示")
+                            }, click :function(){
+                                console.log("执行之间的事件,执行完就会直接返回了")
+                            }},
+                        {
+                            type: 'warning', label:'点击触发事件',click: function () {
+                                _this.getBaseQueryParam()
+                            }
+                        }, {type: 'delete', multi:true, url: "http://localhost:12006/WS/api/deleteurlArray", fields: ['opId', 'title'], label: '多选删除'},
+                    ],
+                    uploadButtons: [
+                        {
+                            type: 'add',
+                            label: '点击上传文件1',
+                            name: 'test',//文件上传时对应的名称
+                            action: 'http://localhost:12006/WS/api/uploadTest',//后台action
+                            accept: '.xls,.xlsx',//允许上传的类型
+                            size: 1,//文件大小(默认是1,目前仅为1)
+                            required: true,
+                            fields: ['opId', 'title'],//如果要传参数则当前行为必填项
+                            onSuccess: function() {
+                                alert("ok")
+                            },
+                            // onCall: 'test-call'
+                        },
+                        {
+                            type: 'add',
+                            label: '点击上传文件2',
+                            action: 'http://127.0.0.1:12002/iom/api/uploadTest',//后台action
+                            accept: '.pdf',//允许上传的类型
+                            size: 1,//文件大小(默认是1,目前仅为1)
+                            required: true,
+                            fields: ['opId']
+                        }
+                    ],
+                    //查询条件
+                    inputs: [
+                        {name: 'inputFieldName', placeholder: '我是输入框', value: '输入test'},
+                    ],
+                    radios: [
+                        {
+                        name: 'area',
+                        value: 'city',
+                        onChange: function (val, form) {
+                            if (val === 'city') {
+                                form.cityCode = '';
+                                form.type = 1;
+                            } else {
+                                form.cityCode = '3';
+                                form.type = 2;
+                            }
+                        },
+                        options: [{
+                            label: '地级市',
+                            value: 'city'
+                        }, {
+                            label: '区县',
+                            value: 'county'
+                        }]
+                    },{
+                        //按机构统计
+                        name: 'type',
+                        value: 1,
+                        onChange: function (val, form) {
+                            form.type = val;
+                        },
+                        dynamic: function (currentRow, form) {
+                            return form.area === 'county'
+                        },
+                        options: [{
+                            label: '按地区',
+                            value: 2
+                        }, {
+                            label: '按机构',
+                            value: 3
+                        }]
+                        }
+                    ],
+                    dates: [
+                        {
+                        name: '-daterange',
+                        type: 'daterange',
+                        startPlaceholder: '事件开始日期',
+                        endPlaceholder: '事件结束日期'
+                    }
+                    ],
+                    selects: [
+                        {
+                            name: 'adviceStatus',
+                            value: 0,
+                            placeholder: '收费状态',
+                            clearable: false,
+                            options: [{
+                                value: 0,
+                                label: '待收费'
+                            }, {
+                                value: 1,
+                                label: '已收费'
+                            },{
+                                value: 2,
+                                label: '作废'
+                            },{
+                                value: 3,
+                                label: '回退'
+                            }]
+                        },{
+                            //如果需要后台指定下拉框的值,这里的id和isRemoteSelected一定要写上
+                            //id不能重复谢谢
+                            name: 'selected',
+                            placeholder: '我是获取远程数据并选中的下拉框',
+                            optionsUrl: "./org3.json",
+                            id: 'testSelected',
+                            isRemoteSelected: true,
+                        },{
+                            name: 'testInputSelect',
+                            placeholder: '输入下拉框',
+                            clearable: true,
+                            options: [],
+                            props: {
+                                filterable: true,
+                                remote: true,
+                                //multiple: true, //不支持多个查询
+                                'reserve-keyword': true,
+                                'remote-method': function(query) {
+                                    _this.form.selects[2].options = [{label: 'tt', value: '111'},{label: 'tt2', value: '222'}]
+                                }
+                            },
+                        }
+                    ]
+                },
+                table: {
+                    url: "tabledemodata.json",
+                    //url: "http://localhost:12006/WS/api/queryTest",
+                    // manual: true,
+                    // handler: function() {
+                    //     console.log("handler")
+                    // },
+                    dataProcess: function (datas) {
+                        return datas
+                    },
+                    cols: [
+                        {
+                            prop: "title",
+                            label: "标题",
+                            width: 100
+                        },
+                        {
+                            prop: "createTime",
+                            label: "创建时间",
+                        },
+                        {
+                            prop: "sexText",
+                            label: "性别"
+                        },{
+                            prop: "address",
+                            label: "地址"
+                        },{
+                            prop: "author",
+                            label: "作者"
+                        }
+                    ],
+                    enumMap: {
+                        sex: GLOBAL_ENUM.SEX
+                    },
+                    params: {
+                        'userName': 'yzl'
+                    },
+                    sort:'title'
+                },
+                dialogs:[{
+                    ref: 'addDialog',
+                    type:'',//默认值是dialog,如果写tableDialog就是打开一个表格
+                    title: '新增',
+                    event: function () {
+                        alert("testH event")
+                    },
+                    items: [
+                        {
+                            label: '标题',
+                            type: 'input',
+                            value: '直接赋值',
+                            field: 'title',
+                            required: true,
+                            props: {
+                                placeholder: '请输入用户名'
+                            },
+                            rules: [{required: true, message: '请输入用户名', trigger: 'blur'}],
+                        },
+                        {
+                            label: '用户ID',
+                            type: 'input',
+                            field: 'userId',
+                            props: {
+                                placeholder: '用户登录时使用的ID'
+                            },
+                            rules: [{required: true, message: '请输入用户ID', trigger: 'blur'}],
+                        },
+                        {
+                            label: '密码',
+                            type: 'password',
+                            field: 'password',
+                            props: {
+                                placeholder: '请输入密码'
+                            },
+                            rules: [{required: true, message: '请输入密码', trigger: 'blur'}],
+                        },
+                        {
+                            label: '手机号',
+                            type: 'input',
+                            field: 'userPhone',
+                            props: {
+                                placeholder: '初始密码为手机号后六位'
+                            },
+                            rules: [{pattern: /^1[3456789]\d{9}$/, message: '请输入正确的手机', trigger: 'blur'}],
+                        },
+                        {
+                            label: '邮箱',
+                            type: 'input',
+                            field: 'userEmail',
+                            props: {
+                                placeholder: '请输入邮箱'
+                            },
+                            rules: [{type: 'email', message: '请输入正确的邮箱', trigger: 'blur'}],
+                        },
+                        {
+                            label: '下拉框',
+                            type: 'select',
+                            field: 'org',
+                            optionsUrl: "./orgdata.json",
+                            props: {
+                                filterable: true
+                            },
+                            rules: [{required: true, message: '请选择机构', trigger: 'blur'}],
+                        },
+                        {
+                            label: '多选下拉框',
+                            type: 'multiSelect',
+                            field: 'orgMulti',
+                            optionsUrl: "./orgdataMuliti.json",
+                            props: {
+                                filterable: true
+                            },
+                            rules: [{required: true, message: '请选择机构', trigger: 'blur'}],
+                            value:['v1', 'v2'],
+                            needName: true
+                        },{
+                            label: '只能输入数字',
+                            type: 'input',
+                            field: 'userName',
+                            props: {
+                                placeholder: '请输入缴费金额',
+                                maxlength: 3,
+                                oninput: "value=value.replace(/[^0-9.]/g,'')"
+                            },
+                            rules: [{required: true, message: '请输入用户名', trigger: 'blur'}],
+                        },{
+                            label: '选中值的下拉框',
+                            type: 'select',
+                            field: 'orgId2',
+                            optionsUrl: "./org2.json",
+                            isRemoteSelected: true,//后台指定选中值,格式为{"value":"v","datas":[{"label":"标签"},{"value":"v"}]}，这里最后会选中value
+                            //needName: true,//默认为不存在该属性,当该属性存在时则会提交下拉框的name值,规则为field + Name,这里为orgIdName
+                            rules: [{required: true, message: '请选择', trigger: 'blur'}],
+                            props: {
+                                filterable: true
+                            },
+                        },{
+                            field: 'remoteInputSelect',
+                            label: '远程文字下拉框',
+                            type: 'select',
+                            placeholder: '输入下拉框',
+                            options: [],
+                            props: {
+                                filterable: true,
+                                remote: true,
+                                //multiple: true, //不支持多个查询
+                                'reserve-keyword': true,
+                                'remote-method': function(query) {
+                                    _this.dialogs[0].items[8].options = [{label: 'tt', value: '111'},{label: 'tt2', value: '222'}]
+                                }
+                            },
+                        },
+                        {
+                            label: '时间1',
+                            type: 'time',
+                            field: 'datetime',
+                            props: {
+                                placeholder: '请选择时间',
+                                'value-format': 'yyyy-MM-dd',
+                                'type': 'datetime' //year/month/date/week/datetime/datetimerange/daterange
+                            },
+                            rules: [{ message: '请选择时间', trigger: 'blur'}],
+                        },
+                        {
+                            label: '时间2',
+                            type: 'time',
+                            field: 'year',
+                            props: {
+                                placeholder: '请选择时间',
+                                'value-format': 'yyyy-MM-dd',
+                                'type': 'year'//year/month/date/week/datetime/datetimerange/daterange
+                            },
+                            rules: [{message: '请选择时间', trigger: 'blur'}],
+                        },{
+                            label: '时间3',
+                            type: 'time',
+                            field: 'date',
+                            props: {
+                                placeholder: '请选择时间',
+                                'value-format': 'yyyy-MM-dd',
+                                'type': 'date'//year/month/date/week/datetime/datetimerange/daterange
+                            },
+                            rules: [{message: '请选择时间', trigger: 'blur'}],
+                        },{
+                            label: '时间4',
+                            type: 'timerange',
+                            timeFormat: 'yyyy-MM-dd',
+                            timeType: 'daterange', //monthrange,datetimerange,daterange
+                            timeKeys: ['startTime', 'endTime'],
+                            field: 'date5',
+                            rules: [{message: '请选择时间', trigger: 'blur', required:false}]
+                        },{
+                            label: '时间5',
+                            type: 'timerange',
+                            timeFormat: 'yyyy-MM',
+                            timeType: 'monthrange', //monthrange,datetimerange,daterange
+                            timeKeys: ['startTime3', 'endTime3'],
+                            field: 'date7',
+                            //value: [new Date(2000, 10, 10, 10, 10), new Date(2000, 10, 11, 10, 10)],// ['2020-03', '2020-04']
+                            rules: [{message: '请选择时间', trigger: 'blur', required:true}]
+                        }
+                    ],
+                    submitUrl: "http://localhost:12006/WS/api/addForm",
+                    onClose(){
+                        console.log("弹窗关闭")
+                    },
+                    manual: true,//设置为false就不用写下面的handler了
+                    //module: addHeaderImgMod,
+                    handler: function (innerVm, formData, rawData, cb, ref, url) {
+                        //如果有配置这个并且manual为false在post之后还会执行这个函数
+                        console.log("demo1")
+                        console.log(formData);
+                        //console.log(innerVm, formData, rawData, cb, ref, url);
+                        //console.log(formData.orgMulti);
+                        // console.log(formData.endTime);
+                        console.log(formData.startTime3);
+                        console.log(formData.endTime3);
+                        // console.log(formData.startTime2);
+                        // console.log(formData.endTime2);
+                        // console.log(url)
+                        innerVm.$message.error("配置manual改为主动提交至后台，这里演示无法提交")
+                    }
+                },{
+                    ref: 'editDialog',
+                    title: '编辑',
+                    items: [
+                        {
+                            label: '标题',
+                            type: 'input',
+                            field: 'title',
+                            readonly: true,
+                            props: {
+                                placeholder: '请输入标题'
+                            },
+                            rules: [{required: true, message: '请输入用户名', trigger: 'blur'}],
+                        },
+                        {
+                            label: '创建时间',
+                            type: 'input',
+                            field: 'createTime',
+                            props: {
+                                placeholder: '请输入创建时间'
+                            },
+                        },
+                        {
+                            label: '性别',
+                            type: 'input',
+                            field: 'sex',
+                            props: {
+                                placeholder: '请输入性别'
+                            },
+                            // rules: [{pattern: /^1[3456789]\d{9}$/, message: '请输入正确的手机', trigger: 'blur'}],
+                        },
+                        {
+                            label: '手机号',
+                            type: 'input',
+                            field: 'phone',
+                            props: {
+                                placeholder: '正则匹配手机号'
+                            },
+                            rules: [{pattern: /^1[3456789]\d{9}$/, message: '请输入正确的手机', trigger: 'blur'}],
+                        },
+                        {
+                            label: '地址',
+                            type: 'input',
+                            field: 'address',
+                            props: {
+                                placeholder: '请输入邮箱'
+                            },
+                        },
+                        {
+                            label: '下拉框',
+                            type: 'select',
+                            field: 'orgId',
+                            optionsUrl: "./orgdata.json",
+                            needName: true,//默认为不存在该属性,当该属性存在时则会提交下拉框的name值,规则为field + Name,这里为orgIdName
+                            rules: [{required: true, message: '请选择', trigger: 'blur'}],
+                            props: {
+                                filterable: true
+                            },
+                        },
+                        {
+                            label: '数字值下拉框',
+                            type: 'select',
+                            field: 'numberSelect',
+                            optionsUrl: "./numberSelect.json",
+                            needName: true,//默认为不存在该属性,当该属性存在时则会提交下拉框的name值,规则为field + Name,这里为orgIdName
+                            rules: [{required: true, message: '请选择', trigger: 'blur'}],
+                            props: {
+                                filterable: true
+                            },
+                        },{
+                            label: '选中值的下拉框',
+                            type: 'select',
+                            field: 'orgId2',
+                            optionsUrl: "./org2.json",
+                            isRemoteSelected: true,//后台指定选中值,格式为{"value":"v","datas":[{"label":"标签"},{"value":"v"}]}，这里最后会选中value
+                            //needName: true,//默认为不存在该属性,当该属性存在时则会提交下拉框的name值,规则为field + Name,这里为orgIdName
+                            rules: [{required: true, message: '请选择', trigger: 'blur'}],
+                            props: {
+                                filterable: true
+                            },
+                        },{
+                            label: '时间3',
+                            type: 'time',
+                            field: 'createTime3',
+                            props: {
+                                placeholder: '请选择时间',
+                                'value-format': 'yyyy-MM-dd',
+                                'type': 'date'//year/month/date/week/datetime/datetimerange/daterange
+                            },
+                            rules: [{required: true, message: '请选择时间', trigger: 'blur'}],
+                        }
+                    ],
+                    paramFields: ['opId'],
+                    enumMap: {
+                        sex: GLOBAL_ENUM.SEX
+                    },
+                    requireRow: true,
+                    submitUrl: "http://localhost:12006/WS/api/addForm",
+                    manual: true,
+                    handler: function (innerVm, formData, rawData, cb, ref, url) {
+                        console.log("test edit handler")
+                        console.log(formData);
+                        console.log(innerVm, formData, rawData, cb, ref, url);
+                        _this.$message.error("配置manual改为主动提交至后台，这里演示无法提交")
+                    }
+                }],
+            }
+        },
+        mounted: function (){
+            //testSelected其实就是上面指定的id，切记不能重复
+            //这里要回调base.js的函数才能绑定值,这是固定套路写法
+            this.$refs.base.getSelectedCombox("testSelected")
+        },
+        methods: {
+            rowClick: function (row) {
+                //this.$refs.base.showFormDialog("addDialog")
+            },
+            currentRowChange: function (val) {
+                this.currentRow = val
+                console.log("currentRowChange");
+                console.log(val)
+            },
+            multiRowChange: function (array) {
+                this.multiRow = array
+                console.log("multiRowChange");
+                console.log(array)
+            },
+            testCall: function(response, file, fileList, index) {
+                console.log("testCall")
+                console.log(response)
+                console.log(file)
+                console.log(fileList)
+                console.log(index)
+            },
+            getBaseQueryParam: function () {
+                var query = this.$refs.base.getQueryParam()
+                console.log(query)
+            },
+            queryParam: function(val) {
+                //base.js中有emit会调用这个参数,并传递val过来
+                console.log("监听到导航栏的值发生变化")
+                console.log(val)
+            },
+            handleSelectChange:function (json) {
+
+                console.log(json.field);
+                console.log(json.value);
+
+                var param = {
+                    'ref':'addDialog',
+                    'fields': {
+                        "title": "下拉框赋值改变标题",
+                        "userId": "下拉框改变userId"
+                    }
+                }
+                //方法一
+                this.$refs.base.setDialogComponentValue(param)
+                //方法二
+                var formData = this.$refs.base.getDialogFormData('addDialog')
+                formData['userPhone'] = 13799118590
+            }
+        }
+    })
+
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+
+.tbl-wrapper {
+    position: relative;
+    padding-top: 70px;
+    padding-bottom: 30px;
+    margin-bottom: -30px;
+    margin-top: -75px;
+    height: 100%;
+    box-sizing: border-box;
+    border: 0;
+}
+
+.el-table__empty-block {
+    height: auto;
+}
+
+.test {
+    min-height: 600px;
+}

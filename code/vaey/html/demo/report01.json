@@ -1,0 +1,3 @@
+{"total":2,"code":100,"success":true,
+    "datas":[{"offLineRate":"12.56%","transferRate":"98.34%","location":"排放口1","errorRate":"43.15%","time":"M"},
+        {"offLineRate":"72.56%","transferRate":"48.34%","location":"排放口4","errorRate":"13.15%","time":"M"}],"desc":"成功"}

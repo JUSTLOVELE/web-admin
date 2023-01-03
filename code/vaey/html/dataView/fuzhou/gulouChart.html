@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <link rel="stylesheet" href="../../../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../../../css/common.css">
+
+    <script src="../../../lib/vue/vue.js"></script>
+    <script src="../../../lib/element-ui/element.js"></script>
+    <script src="../../../lib/jquery/jquery-3.3.1.min.js"></script>
+    <script src="../../../lib/echarts/echarts.min.js"></script>
+    <!--<script src="/BNWeb/views/lib/echarts/fujian.js"></script>-->
+    <!--<script src="/BNWeb/views/lib/fujian.js"></script>-->
+    <script src="../../../lib/echarts/fuzhou.js"></script>
+
+    <script src="../../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../../component/table/table.css">
+    <script src="../../../component/table/table.js"></script>
+    <link rel="stylesheet" href="../../../component/formDialog/formDialog.css">
+    <script src="../../../component/formDialog/formDialog.js"></script>
+
+    <script src="../../../common/utils.js"></script>
+    <script src="../../../common/config.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .grid-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .data-table {
+            color: #fff;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            font-size: 18px;
+            border: 2px solid #129eed;
+            line-height: 2.5;
+        }
+
+        .data-table td {
+            font-size: 16px;
+            text-align: center;
+            line-height: 2;
+            border: 1px solid #0577b6;
+        }
+
+        .map-box {
+            height: 100%;
+            border: 1px solid #0577b6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-box__hd {
+            font-size: 18px;
+            color: #fff;
+            text-align: center;
+            line-height: 2.5;
+            font-weight: bold;
+            border: 2px solid #129eed;
+        }
+
+        .map-box__cont {
+            padding: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .map-box__cont img {
+            width: 100%;
+        }
+
+        .map-box__cont .img-bg {
+            background-image: url(/BNWeb/views/img/gulouqu_2.png);
+            background-size: contain;
+            background-repeat: no-repeat;
+            width: 100%;
+            height: 100%;
+            background-position: center;
+        }
+
+        .chart-box {
+            height: 100%;
+            border: 1px solid #0577b6;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chart-box > div {
+            flex: 1;
+        }
+
+        .chart-box .close-btn {
+            position: absolute;
+            right: 1%;
+            top: 1%;
+            color: #fff;
+            font-size: 24px;
+            z-index: 9;
+        }
+
+        .BMap_cpyCtrl {
+            display: none !important;
+        }
+
+        .anchorBL {
+            display: none !important;
+        }
+    </style>
+</head>
+<body style="background-image: url('/BNWeb/views/img/dataViewBg.png');">
+<el-container id="vue" style="height: 100%; min-width: 1024px; min-height: 768px;">
+    <el-header height="60px" style="text-align: center; line-height: 60px; margin-top: 30px;">
+        <p style="color: #D9F8FE; font-size: 42px;">鼓楼区卫生监督在线智能监管平台</p>
+    </el-header>
+
+    <el-main style="padding-top: 30px; padding-bottom: 40px;">
+        <el-row :gutter="20" style="height: 50%;">
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="timeChart">
+                </div>
+            </el-col>
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="processChart">
+                </div>
+            </el-col>
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="addressChart">
+                </div>
+            </el-col>
+        </el-row>
+        <el-row :gutter="20" style="height: 50%;">
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="typeChart">
+                </div>
+            </el-col>
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="satisfactionChart">
+                </div>
+            </el-col>
+            <el-col :span="8" style="height: 100%;">
+                <div class="grid-content" id="orgChart">
+                </div>
+            </el-col>
+        </el-row>
+    </el-main>
+</el-container>
+
+<script>
+    var vueObj = new Vue({
+        el: '#vue',
+        data: function () {
+            var _this = this
+
+            return {
+                caseType: {
+                    superCase: 0, //特大案件数
+                    veryCase: 0, //重大案件数
+                    general: 0, //一般案件数
+                    little: 0, //轻微
+                    other: 0, //其他
+                    // notEnd: 0 //还在进行的案件数
+                },
+                process: {
+                    handling: 0, //正在处理
+                    dealing: 0, //正在处理
+                    handled: 0 //已结案
+                },
+                satisfaction: {
+                    noSatisfaction: 0, //不满意
+                    basicSatisfaction: 0, //基本满意
+                    satisfaction: 0, //满意
+                    noWrite: 0, //未填写
+                },
+                // event: {
+                //     medical: 0, //医疗服务违法违规案件数
+                //     maternalAndChildHealth: 0, //妇幼保健违法违规案件数
+                //     infectious: 0, //传染病防治违法违规案件数
+                //     public: 0, //公共场所饮用水学校卫生违法违规案件数
+                //     radiate: 0, //职业与放射卫生违法违规案件数
+                //     supervisor: 0, //卫生监督员违法违规案件数
+                //     other: 0 //其他医疗卫生违法违规案件数
+                // },
+                time: {
+                    year: 0, //今年
+                    month: 0, //本月
+                    // week: 0, //本周，暂时不显示
+                    day: 0, //本日
+                    yearNum: [['2019', 10], ['2020', 20]],
+                    monthNum: [['01', 10], ['02', 20], ['03', 30]],
+                    dayNum: [['01', 1], ['02', 2], ['03', 3], ['04', 3], ['05', 3]]
+                },
+                org: {
+                    hospital: 0,
+                    communityHealth: 0,
+                    outpatientDepartment: 0,
+                    clinic: 0,
+                    other: 0,
+                    notHospital: 0,
+                    // careHome: 0,
+                    // healthCenter: 0,
+                    // sanatorium: 0,
+                    // villageHealthCenter: 0,
+                    // firstAid: 0,
+                    // clinicalLab: 0,
+                    // preventionAndTreatment: 0,
+                    // nursing: 0,
+                    // newHospital: 0,
+                    // bloodBank: 0,
+                    // diseaseControl: 0,
+                    // healthSupervision: 0,
+                    // healthImmunit: 0,
+                    // unknowOrg: 0
+                },
+                orgName: {
+                    hospital: '医院',
+                    communityHealth: '社区卫生',
+                    outpatientDepartment: '门诊部',
+                    clinic: '诊所',
+                    other: '其他医疗机构',
+                    notHospital: '非医疗机构',
+                    // careHome: '保健院',
+                    // healthCenter: '卫生院',
+                    // sanatorium: '疗养院',
+                    // villageHealthCenter: '村卫生所',
+                    // firstAid: '急救',
+                    // clinicalLab: '临床检验中心',
+                    // preventionAndTreatment: '专科疾病防治',
+                    // nursing: '护理',
+                    // newHospital: '医疗新业态',
+                    // bloodBank: '血站',
+                    // diseaseControl: '疾病防控',
+                    // healthSupervision: '卫生监督',
+                    // healthImmunit: '卫生检疫',
+                    // unknowOrg: '未知机构'
+                },
+                address: { //有则显示
+
+                },
+                chartVisible: false
+            }
+        },
+        created: function () {
+        },
+        mounted: function () {
+            this.queryData()
+
+            setInterval(this.queryData, 180000)
+        },
+        methods: {
+            queryData: function () {
+                var _this = this
+                $.ajax({
+                    method: "GET",
+                    url: GLOBAL_API.BIG_DATA.QUERY,
+                    data: {
+                        provinceCode: '350000',
+                        cityCode: '350100',
+                        countyCode: '350102'
+                    }
+                }).done(function (resData) {
+                    // var resData = JSON.parse(res)
+                    if (resData.code !== 100) {
+                        _this.$message.error(resData.desc || '查询失败');
+                        return
+                    }
+                    Object.assign(_this.caseType, resData.caseType)
+                    Object.assign(_this.process, resData.process)
+                    Object.assign(_this.satisfaction, resData.satisfaction)
+                    //Object.assign(_this.event, resData.event)
+                    Object.assign(_this.time, resData.time)
+                    Object.assign(_this.org, resData.org)
+                    Object.assign(_this.address, resData.address)
+
+                }).fail(function (res) {
+                    _this.$message.error("网络异常");
+
+                }).always(function () {
+                    _this.initTimeBarChart('timeChart', _this.time, '按时间分布统计', {day: '本日', month: '本月', year: '今年'})
+                    _this.initPieChart('typeChart', _this.caseType, '按强度分布统计', {superCase: '特大', veryCase: '重大', general: '一般', little: '轻微', other: '非医疗卫生'})
+                    _this.initBarChart('processChart', _this.process, '按进度分布统计', {handling: '已收', dealing: '在办', handled: '办结'})
+                    _this.initPieChart('satisfactionChart', _this.satisfaction, '按满意度分布统计', {satisfaction: '满意', basicSatisfaction: '基本满意', noSatisfaction: '不满意', noWrite: '未填写'})
+                    _this.initBarChart('addressChart', _this.address, '按区域分布统计')
+                    _this.initPieChart('orgChart', _this.org, '按机构分布统计', _this.orgName)
+                })
+            },
+            initPieChart: function (id, data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                console.log(data, title, alias)
+
+                var chartData = {
+                    legendData: [],
+                    selected: {},
+                    seriesData: [],
+                    countNum: 0
+                }
+
+                Object.keys(data).forEach(function (key) {
+                    var name = key
+                    if (alias != null && alias[key] != null) {
+                        name = alias[key]
+                    }
+                    chartData.legendData.push(name)
+                    chartData.selected[name] = true
+                    chartData.seriesData.push({
+                        name: name,
+                        value: data[key]
+                    })
+                    chartData.countNum = chartData.countNum + data[key]
+                })
+
+                var option = {
+                    color: ['#00b4ff', '#de9984', '#91c5ad', '#f2ae43', '#9ab7e0', '#83d2d5', '#9cccd4', '#ebdb7b', '#edd5a6', '#63d6e5'],
+                    title: {
+                        text: title,
+                        subtext: '总数：' + chartData.countNum,
+                        x: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                        top: '2.5%'
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        // formatter: "{a} <br/>{b} : {c} ({d}%)" //a: series.name, b: seriesData.name, c.seriesData.value
+                        formatter: "{b}: {c} <br/>占比: {d}% " //a: series.name, b: seriesData.name, c.seriesData.value
+                    },
+                    legend: {
+                        type: 'scroll',
+                        orient: 'vertical',
+                        right: 10,
+                        top: 30,
+                        bottom: 30,
+                        data: chartData.legendData,
+                        selected: chartData.selected,
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    },
+                    series: [
+                        {
+                            // name: '数量',
+                            type: 'pie',
+                            radius: '55%',
+                            // center: ['40%', '50%'],
+                            data: chartData.seriesData,
+                            itemStyle: {
+                                emphasis: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById(id));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+            initBarChart: function (id, data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                console.log(data, title, alias)
+
+                var chartData = {
+                    xAxisData: [], //x轴标签
+                    seriesData: [], //x轴数据
+                }
+
+                Object.keys(data).forEach(function (key) {
+                    var xLabel = key
+                    if (alias != null && alias[key] != null) {
+                        xLabel = alias[key]
+                    }
+                    chartData.xAxisData.push(xLabel)
+                    chartData.seriesData.push(data[key])
+                })
+
+                var option = {
+                	color: ['#3398DB'],
+                    title: {
+                        text: title,
+                        // subtext: '总计：' + chartData.countNum,
+                        x: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                        top: '2.5%'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                        // trigger: 'item',
+                        // formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true,
+                    },
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: chartData.xAxisData,
+                            axisTick: {
+                                alignWithLabel: true
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '投诉举报数',
+                            type: 'bar',
+                            barWidth: '25%',
+                            data: chartData.seriesData,
+                            // itemStyle: {
+                            //     emphasis: {
+                            //         shadowBlur: 10,
+                            //         shadowOffsetX: 0,
+                            //         shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            //     }
+                            // }
+                        }
+                    ]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById(id));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+            initTimeBarChart: function (id, data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                var yearData = data.yearNum
+                var yearList = new Array();
+                var yearValueList = new Array();
+                
+                if(yearData.length) {
+                	
+                	for (var i=0; i<yearData.length; i++) {
+                    	
+                		for (var key in yearData[i]){
+                			
+                			yearList[i] = key;
+                			yearValueList[i] =  yearData[i][key]
+                		}
+                    }
+                }
+
+                var monthData = data.monthNum
+                var monthList = new Array();
+                var monthValueList = new Array();
+                
+                if(monthData.length) {
+                	
+						for (var i=0; i<monthData.length; i++) {
+                    	
+                		for (var key in monthData[i]){
+                			
+                			monthList[i] = key;
+                			monthValueList[i] =  monthData[i][key]
+                		}
+                    }
+                }
+                
+
+                var dayData = data.dayNum
+                var dayList = new Array();
+                var dayValueList = new Array();
+                
+                if(dayData.length) {
+                	
+					for (var i=0; i<dayData.length; i++) {
+                	
+            		for (var key in dayData[i]){
+            			
+            			dayList[i] = key;
+            			dayValueList[i] =  dayData[i][key]
+            		}
+                }
+            }
+
+                var option = {
+                	color: ['#3398DB'],
+                    title: [{
+                        top: '0.5%',
+                        left: 'center',
+                        text: '按年统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }, {
+                        top: '32.5%',
+                        left: 'center',
+                        text: '按月统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }, {
+                        top: '65%',
+                        left: 'center',
+                        text: '按日统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }
+                    ],
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                    },
+                    xAxis: [{
+                        data: yearList,
+                        gridIndex: 0,
+                        axisLine: {
+                        	alignWithLabel: true,
+                        	lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }, {
+                        data: monthList,
+                        gridIndex: 1,
+                        axisLine: {
+                        	alignWithLabel: true,
+                        	lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }, {
+                        data: dayList,
+                        gridIndex: 2,
+                        axisLine: {
+                        	alignWithLabel: true,
+                        	lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }],
+                    yAxis: [
+                    	{
+                    		gridIndex: 0,
+                    		type: 'value',
+                    		axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                    	},
+                    	{
+                    		gridIndex: 1,
+                    		type: 'value',
+                    		axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                    	},
+                    	{
+                    		gridIndex: 2,
+                    		type: 'value',
+                    		axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                    	}
+                    ],
+                    grid: [
+                        {y: '5%', height: '25%'},
+                        {y: '37.5%', height: '25%'},
+                        {y: '70%', height: '25%'},
+                    ],
+                    series: [{
+                        type: 'bar',
+                        data: yearValueList,
+                        barWidth: '25%',
+                        xAxisIndex: 0,
+                        yAxisIndex: 0
+                    }, {
+                        type: 'bar',
+                        barWidth: '25%',
+                        data: monthValueList,
+                        xAxisIndex: 1,
+                        yAxisIndex: 1
+                    }, {
+                        type: 'bar',
+                        barWidth: '25%',
+                        data: dayValueList,
+                        xAxisIndex: 2,
+                        yAxisIndex: 2
+                    },]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById(id));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+        }
+    })
+</script>
+</body>
+</html>

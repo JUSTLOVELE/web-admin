@@ -1,0 +1,304 @@
+body, h1, h2, h3, h4, h5, h6, hr, p, blockquote, dl, dt, dd, ul, ol, li, pre, form, fieldset, legend, button, input, textarea, th, td {
+    margin: 0;
+    padding: 0
+}
+
+html {
+    color: #000;
+    /*overflow-y: scroll;*/
+    /*overflow: -moz-scrollbars*/
+    /*height: 100%;*/
+}
+
+body, button, input, select, textarea {
+    font: 12px arial
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-size: 100%
+}
+
+em {
+    font-style: normal
+}
+
+small {
+    font-size: 12px
+}
+
+ul, ol {
+    list-style: none
+}
+
+a {
+    text-decoration: none;
+    color: #409EFF;
+}
+
+a:visited {
+    color: inherit;
+}
+
+a:hover {
+    text-decoration: none;
+    /*color: #409EFF*/
+}
+
+legend {
+    color: #000
+}
+
+fieldset, img {
+    border: 0
+}
+
+button, input, select, textarea {
+    font-size: 100%
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: inherit;
+}
+
+img {
+    -ms-interpolation-mode: bicubic
+}
+
+textarea {
+    resize: vertical
+}
+
+.left {
+    float: left
+}
+
+.right {
+    float: right
+}
+
+.overflow {
+    overflow: hidden
+}
+
+.hide {
+    display: none
+}
+
+.block {
+    display: block
+}
+
+.inline {
+    display: inline
+}
+
+.error {
+    color: #F00;
+    font-size: 12px
+}
+
+label, button {
+    cursor: pointer
+}
+
+.clearfix:after {
+    content: '\20';
+    display: block;
+    height: 0;
+    clear: both
+}
+
+.clearfix {
+    zoom: 1
+}
+
+.clear {
+    clear: both;
+    height: 0;
+    line-height: 0;
+    font-size: 0;
+    visibility: hidden;
+    overflow: hidden
+}
+
+.wordwrap {
+    word-break: break-all;
+    word-wrap: break-word
+}
+
+.s-yahei {
+    font-family: arial, 'Microsoft Yahei', '微软雅黑'
+}
+
+pre.wordwrap {
+    white-space: pre-wrap
+}
+
+body, form {
+    position: relative;
+    z-index: 0
+}
+
+td {
+    text-align: left
+}
+
+img {
+    border: 0
+}
+
+/*override*/
+.el-pagination .el-select .el-input .el-input__inner {
+    height: 28px;
+    width: inherit;
+}
+.el-select .el-input .el-select__caret {
+    line-height: 15px;
+}
+
+.el-message-box__content {
+    position: relative;
+}
+
+.el-input.is-disabled .el-input__inner {
+    color: #333;
+}
+
+.el-textarea.is-disabled .el-textarea__inner {
+    color: #333;
+}
+
+.el-steps--vertical {
+    height: 65%;
+}
+
+/*表单*/
+.query-from {
+    padding-top: 12px;
+    background-color: #f2f2f2;
+    padding-left: 20px;
+    z-index: 9;
+    position: relative;
+}
+
+.el-form-item--mini.el-form-item, .el-form-item--small.el-form-item {
+    margin-bottom: 12px;
+}
+
+.el-dialog__body {
+    padding: 10px 20px;
+    max-height: 620px;
+    overflow-y: auto;
+}
+
+.el-card__header {
+    padding: 5px 20px;
+}
+
+.el-dialog__footer {
+    padding-bottom: 10px;
+}
+
+.el-message-box {
+    display: block;
+    margin: 0 auto;
+    vertical-align: initial;
+    margin-top: 15vh;
+}
+
+.el-tree__empty-block {
+    height: auto;
+}
+
+.dialog_mod .el-dialog {
+    width: 600px;
+}
+
+.el-input--mini .el-input__inner {
+    width: 178px;
+}
+
+/*上传文件预览*/
+.el-upload-list--picture-card .el-upload-list__item {
+    width: 115px;
+    height: 115px;
+    margin: 0 4px 8px 4px;
+    z-index: 1;
+}
+
+.el-upload--picture-card {
+    width: 115px;
+    height: 115px;
+    line-height: 115px;
+    margin: 0 4px;
+}
+
+/*非图片则显示文件名*/
+.el-upload-list--picture-card .el-upload-list__item-thumbnail {
+    color: #fff;
+    font-size: 0;
+}
+img.el-upload-list__item-thumbnail:after {
+    content: " " attr(alt);
+    font-size: 14px;
+    /*padding-top: 25px;*/
+    color: rgb(100, 100, 100);
+    display: block;
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0);
+    border: 2px solid white;
+    border-top: 25px solid white;
+    word-break: break-all;
+}
+
+/*.el-upload-list--picture-card .el-upload-list__item-name {*/
+    /*display: block;*/
+    /*position: absolute;*/
+    /*top: 50%;*/
+    /*margin-top: -15px;*/
+    /*line-height: 15px;*/
+    /*width: 100%;*/
+    /*text-align: center;*/
+    /*margin-right: 0px;*/
+    /*overflow: hidden;*/
+    /*padding-left: 0px;*/
+    /*text-overflow: inherit;*/
+    /*white-space: inherit;*/
+    /*z-index: -1;*/
+/*}*/
+
+/*禁用不显示上传按钮*/
+.el-upload-list.el-upload-list--picture-card.is-disabled + .el-upload.el-upload--picture-card {
+    display: none;
+}
+
+.el-upload-list.el-upload-list--picture-card.is-disabled:after {
+    display: block;
+    content: '未上传';
+    z-index: 0;
+    position: absolute;
+    top: 0;
+    left: 10px;
+}
+
+.action-form .el-form-item__label {
+    font-weight: bold;
+    color: #333;
+}
+
+.el-card__body {
+    min-height: 20px;
+}
+
+.el-card__body > div {
+    position: relative;
+}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <link rel="stylesheet" href="../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../css/common.css">
+
+    <script src="../lib/vue/vue.js"></script>
+    <script src="../lib/element-ui/element.js"></script>
+    <script src="../lib/jquery/jquery-3.3.1.min.js"></script>
+    <script src="../lib/echarts/echarts.common.min.js"></script>
+    <script src="../common/utils.js"></script>
+
+    <link rel="stylesheet" href="../component/table/table.css">
+    <script src="../component/table/table.js"></script>
+    <link rel="stylesheet" href="../component/formDialog/formDialog.css">
+    <script src="../component/formDialog/formDialog.js"></script>
+    <script src="../component/base/base.js"></script>
+</head>
+<body>
+<div id="vue">
+    <base-component ref="base" :form="form" :table="table" :dialogs="dialogs" @current-row-change="currentRowChange">
+
+    </base-component>
+</div>
+
+<script>
+  var vueObj = new Vue({
+    el: '#vue',
+    data: function () {
+      var _this = this
+      var editDialogItems = [
+        {
+          label: '文体',
+          type: 'select',
+          field: 'style',
+          options: [
+            {label: '论文', value: 1},
+            {label: '课件', value: 2},
+            {label: '通知', value: 3},
+            {label: '阅读', value: 4},
+          ],
+          rules: [{required: true, message: '请选择文体', trigger: 'blur'}],
+        },
+        {
+          label: '文本类型',
+          type: 'select',
+          field: 'type',
+          options: [
+            {label: '论文', value: 1},
+            {label: '课件', value: 2},
+            {label: '通知', value: 3},
+            {label: '阅读', value: 4},
+          ],
+          rules: [{required: true, message: '请选择文本类型', trigger: 'blur'}],
+        },
+        {
+          label: '文本位置',
+          type: 'select',
+          field: 'location',
+          options: [
+            {label: '论文', value: 1},
+            {label: '课件', value: 2},
+            {label: '通知', value: 3},
+            {label: '阅读', value: 4},
+          ],
+          rules: [{required: true, message: '请选择文本位置', trigger: 'blur'}],
+        },
+        {
+          label: '文本数据',
+          type: 'textarea',
+          field: 'data',
+          props: {
+            placeholder: '请输入文本数据'
+          },
+          rules: [{required: true, message: '请输入文本数据', trigger: 'blur'}],
+        }
+      ]
+
+      return {
+        currentRow: null,
+        form: {
+          buttons: [
+            {operation: 'edit', bindRef: 'editDialog', label: '编辑'},
+            // {operation: 'view', bindRef: 'viewDialog', label: '查看'},
+            {operation: {type: 'delete', url: 'messageCenterAction/deleteAllianceMsg', fields: ['opId']}, label: '删除'},
+          ],
+          inputs: [
+            {name: 'title', placeholder: '根据标题查询'},
+          ],
+        },
+        table: {
+          url: 'messageCenterAction/getAllAllianceMsg',
+          cols: [
+            {
+              prop: "sourceName",
+              label: "来源名",
+            },
+            {
+              prop: "source",
+              label: "网站网址",
+            },
+            {
+              prop: "textStyle",
+              label: "文体",
+            },
+            {
+              prop: "textType",
+              label: "文本类型",
+            },
+            {
+              prop: "textLocation",
+              label: "文本位置",
+            },
+            {
+              prop: "textData",
+              label: "文本数据",
+            },
+            {
+              prop: "writer",
+              label: "作者",
+            },
+            {
+              prop: "textNumber",
+              label: "字数",
+            },
+            {
+              prop: "text_sort",
+              label: "排序",
+            },
+            {
+              prop: "articleName",
+              label: "文章名字",
+            },
+            {
+              prop: "textFrom",
+              label: "来源",
+            },
+            {
+              prop: "textTypeName",
+              label: "文本类型名字",
+            },
+            {
+              prop: "createTime",
+              label: "创建时间",
+            },
+          ],
+          enumMap: {
+
+          },
+          sort: '[{"property":"create_time","direction":"DESC"}]'
+        },
+        dialogs: [
+          {
+            ref: 'editDialog',
+            title: '新增文本类型',
+            items: editDialogItems,
+            submitUrl: 'messageCenterAction/addAllianceMessage',
+          },
+        ],
+      }
+    },
+    methods: {
+      currentRowChange: function (val) {
+        var _this = this
+        _this.currentRow = val
+      },
+    },
+  })
+</script>
+</body>
+</html>

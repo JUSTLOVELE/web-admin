@@ -1,0 +1,709 @@
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>demo02</title>
+
+    <link rel="stylesheet" href="../../lib/element-ui/element.css">
+    <script src="../../common/constant.js"></script>
+    <script src="../../common/utils.js"></script>
+    <script src="../../lib/vue/vue.js"></script>
+    <script src="../../lib/element-ui/element.js"></script>
+    <script src="../../lib/jquery/jquery3.5.1.js"></script>
+    <script src="../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../component/table/table.css">
+    <script src="../../component/table/table.js"></script>
+    <script src="../../component/formDialog/formDialog.js"></script>
+    <link rel="stylesheet" href="../../component/formDialog/formDialog.css">
+</head>
+
+<body>
+    <div id="vue">
+        <base-component ref="base" :form="form" :table="table" :dialogs="dialogs"
+            @current-row-change="currentRowChange">
+            <template slot="uploadSyncSlot">
+                <!--表单-->
+                <el-form :inline="true" status-icon class="action-form" ref="actionForm" :rules="actionFormRules"
+                    :model="actionFormData" size="mini">
+                    <!--查看流程-->
+                    <div>
+                        <el-form-item label="当前流程" label-width="85px">
+                            <el-button type="primary" size="mini" @click="showProgress">查看</el-button>
+                        </el-form-item>
+                    </div>
+                    <div>
+                        <el-form-item label="审批人" label-width="85px">
+                            <el-input v-model="actionFormData.user" placeholder="审批人"></el-input>
+                        </el-form-item>
+
+                    </div>
+                    <el-form-item label="待审核" label-width="85px">
+                        <el-radio-group v-model="action">
+                            <el-radio-button label="通过">通过</el-radio-button>
+                            <el-radio-button label="退回">退回</el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
+
+                    <div v-show="action === '通过'">
+                        <el-form-item label="公示案件" label-width="85px">
+                            <el-radio-group v-model="actionFormData.isPublic">
+                                <el-radio-button :label="1">是</el-radio-button>
+                                <el-radio-button :label="0">否</el-radio-button>
+                            </el-radio-group>
+                        </el-form-item>
+                    </div>
+                    <!--退回模块-->
+                    <div v-show="action === '退回'">
+                        <el-form-item prop="reply" label="反馈" label-width="85px">
+                            <el-input type="textarea" style="width: 446px" :autosize="{ minRows: 2, maxRows: 4}"
+                                placeholder="请输入反馈" v-model.trim="actionFormData.reply">
+                            </el-input>
+                        </el-form-item>
+                    </div>
+                </el-form>
+
+
+
+                <label
+                    style="padding-left: 85px; margin-bottom: 10px;text-align: right;display: inline-block;padding: 0 12px 4px 0;box-sizing: border-box;">上传组件</label>
+                <el-card class="box-card">
+                    <el-upload :data="{opId:opId}" action="http://127.0.0.1:12005/AMP/operationsManageAction/test"
+                        list-type="picture-card" :file-list="myFileList" :on-success="handleSuccess"
+                        :auto-upload="true">
+                        <i class="el-icon-plus" style="margin-top:35px"></i>
+                        <div slot="file" slot-scope="{file}">
+                            <img class="el-upload-list__item-thumbnail" :src="file.url" alt="">
+                            <span style="text-align: left" class="el-upload-list__item-actions">
+                                <span class="el-upload-list__item-preview" @click="handlePictureCardPreview(file)">
+                                    <i style="padding-left: 10px;width: 5px;height: 5px;" class="el-icon-zoom-in"></i>
+                                </span>
+                                <span v-if="!disabled" class="el-upload-list__item-delete"
+                                    @click="handleDownload(file)">
+                                    <i style="width: 5px;height: 5px;" class="el-icon-download"></i>
+                                </span>
+                                <span v-if="!disabled" class="el-upload-list__item-delete" @click="handleRemove(file)">
+                                    <i style="width: 5px;height: 5px;" class="el-icon-delete"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </el-upload>
+                    <!-- <el-dialog :visible.sync="dialogVisible">
+                    <img width="100%" :src="dialogImageUrl" alt="">
+                  </el-dialog> -->
+                </el-card>
+            </template>
+        </base-component>
+    </div>
+    <script>
+        var GLOBAL_ENUM = {
+            SEX: {
+                CONVERT_TEXT: 'sexText',
+                CONVERT: {
+                    1: '男',
+                    2: '女',
+                }
+            }
+        }
+
+        var vueObj = new Vue({
+            el: '#vue',
+            created: function () {
+                this.opId = this.generateUUID();
+            },
+            data: function () {
+                var _this = this
+                var newUploaderMod = {
+                    uploader: {
+                        fileUrls: '', //文件url
+                        thumbUrls: '', //如果有缩略图的话有值
+                        label: '上传说明（支持图片、PDF、Word、mp4。仅供内部查阅，不对外公开）',
+                        accept: 'image/*,.pdf,.doc,.docx,.mp4', //可以接受的文件类型
+                        size: 9,
+                        props: {
+                            name: 'mediaFiles', //传到后台的key
+                        },
+                        list: true
+                    }
+                };
+                return {
+                    myFileList: [],
+                    opId: 'ok',
+                    currentRow: null,
+                    disabled: false,
+                    action: '通过',
+                    actionFormData: {
+                        reply: '',
+                        user: '',
+                        isPublic: 0
+                    },
+                    actionFormRules: {
+                        reply: [{
+                            required: true,
+                            message: '请输入反馈',
+                            trigger: 'change'
+                        }],
+                    },
+                    //图片预览
+                    dialogVisible: false,
+                    dialogImageUrl: '',
+                    form: {
+                        //操作按钮
+                        buttons: [{
+                                type: 'add',
+                                bindRef: 'uploadDialog',
+                                label: '同步上传功能组件'
+                            },
+                            {
+                                bindRef: 'uploadSync',
+                                type: 'add',
+                                label: '原生+异步上传功能组件'
+                            },
+                            {
+                                type: 'edit',
+                                bindRef: 'editDialog',
+                                label: '选中并带数据弹出层'
+                            },
+                            {
+                                type: 'add',
+                                bindRef: 'addDialog',
+                                label: '新增表格'
+                            },
+                            {
+                                type: 'edit',
+                                bindRef: 'edit1Dialog',
+                                label: '编辑表格'
+                            },
+                        ],
+                        //查询条件
+                        inputs: [{
+                            name: 'inputFieldName',
+                            placeholder: '我是输入框'
+                        }, ],
+                        dates: [{
+                            name: '-daterange',
+                            type: 'daterange',
+                            startPlaceholder: '事件开始日期',
+                            endPlaceholder: '事件结束日期'
+                        }, ],
+                        selects: [{
+                            name: 'selectFieldName',
+                            placeholder: '我是下拉框',
+                            options: [{
+                                value: 1,
+                                label: '选项1'
+                            }, {
+                                value: 2,
+                                label: '选项2'
+                            }]
+                        }, {
+                            name: 'selectdataFieldName',
+                            placeholder: '我是获取远程数据下拉框',
+                            optionsUrl: "./orgdata.json"
+                        }],
+                    },
+                    table: {
+                        url: "http://127.0.0.1:12002/iom/memberManagementAction/query",
+                        cols: [{
+                                prop: "title",
+                                label: "标题",
+                            },
+                            {
+                                prop: "createTime",
+                                label: "创建时间",
+                            },
+                            {
+                                prop: "sexText",
+                                label: "性别"
+                            }, {
+                                prop: "address",
+                                label: "地址"
+                            }, {
+                                prop: "author",
+                                label: "作者"
+                            }
+                        ],
+                        enumMap: {
+                            sex: GLOBAL_ENUM.SEX
+                        },
+                        params: {}
+                        // sort: '[{"property":"create_time","direction":"DESC"}]'
+                    },
+                    dialogs: [{
+                            ref: 'editDialog',
+                            title: '弹出表格',
+                            width: '1100px',
+                            requireRow: true,
+                            event: function () {
+                                _this.$refs.base.setFormDialogTableData("editDialog", "table")
+                                //alert("testH event")
+                            },
+                            items: [{
+                                type: 'table',
+                                width: '1000px',
+                                cols: [{
+                                        prop: "title",
+                                        label: "标题",
+
+                                    },
+                                    {
+                                        prop: "createTime",
+                                        label: "创建时间",
+
+                                    },
+                                    {
+                                        prop: "sexText",
+                                        label: "性别",
+
+                                    }, {
+                                        prop: "address",
+                                        label: "地址",
+
+                                    }, {
+                                        prop: "author",
+                                        label: "作者",
+
+                                    }
+                                ],
+                            }]
+                        }, {
+                            ref: 'uploadSync',
+                            title: '异步上传组件',
+                            formLabelWidth: '85px',
+                            submitUrl: "http://127.0.0.1:12005/AMP/operationsManageAction/test",
+                            items: [],
+                            manual: true,
+                            onShow: function (rawData) {
+                                //这个函数会被调用哦
+                                console.log('onShow', rawData)
+                                _this.actionFormData.reply = '初始化原生模型'
+                                // _this.picUrls = rawData.imageUrl ? rawData.imageUrl.split(';') : []
+                                // _this.picUrls.pop()
+                                // _this.voiceUrl = rawData.speechUrl ? rawData.speechUrl.slice(0, -1) : '' //去除末尾 ;
+                                // _this.videoUrl = rawData.videoUrl ? rawData.videoUrl.slice(0, -1) : ''
+                                //执法图片
+                                // _this.lawPicUrls = rawData.lawAnnexes ? rawData.lawAnnexes.split(',') : []
+                                // _this.lawPicUrls.pop()
+                                // _this.lawThumbPicUrls = rawData.lawThumbImage ? rawData.lawThumbImage.split(',') : []
+                                // _this.lawThumbPicUrls.pop()
+                                // uploaderMod.uploader.fileUrls = rawData.lawAnnexes ? rawData.lawAnnexes : ''
+                                // uploaderMod.uploader.fileNames = rawData.lawFileName ? rawData.lawFileName : ''
+                            },
+                            handler: function (innerVm, formData, rawData, cb, ref, url) {
+                                // console.log(formData, rawData, cb, ref, url)
+                                var _url = url //默认为通过的url
+                                var needValidate = false
+                                var params = {
+                                    opId: _this.opId,
+                                    user: _this.actionFormData.user
+                                }
+
+                                switch (_this.action) {
+                                    case '通过':
+                                        params.isPublic = _this.actionFormData.isPublic;
+
+                                        break
+                                    case '退回':
+                                        //可以设置url
+                                        params.reply = _this.actionFormData.reply
+                                        needValidate = true
+                                        break
+                                }
+
+                                if (needValidate) {
+                                    if (_this.actionFormData.reply == null || _this.actionFormData
+                                        .reply === '') {
+                                        innerVm.$message.warning('请输入反馈');
+                                        cb()
+                                        return
+                                    }
+                                }
+                                // console.log(_this.actionFormData)
+                                $.ajax({
+                                    method: "GET",
+                                    url: _url,
+                                    data: params,
+                                }).done(function (resData) {
+                                    // var resData = JSON.parse(res)
+                                    if (resData.code !== 100) {
+                                        innerVm.$message.error(resData.desc || '操作失败');
+                                        cb()
+                                        return
+                                    }
+                                    innerVm.$message.success("操作成功");
+                                    innerVm.refreshTable()
+                                    innerVm.getComp(ref).hide()
+                                    cb()
+                                }).fail(function (res) {
+                                    innerVm.$message.error("网络异常");
+                                    cb()
+                                })
+                            },
+                        }, {
+                            ref: 'uploadDialog',
+                            title: '上传组件',
+                            formLabelWidth: '85px',
+                            items: [{ //通常情况下我们都是需要选中table的一列数据,然后把这个数据带个弹出框架
+                                //这里的field就要和table组件的field对应上,这样就可以直接赋值了
+                                label: '普通框',
+                                type: 'input',
+                                field: 'eventTitle',
+                            }, {
+                                label: '下拉框',
+                                type: 'select',
+                                field: 'orgId',
+                                optionsUrl: "./orgdata.json",
+                                rules: [{
+                                    message: '请选择哈哈',
+                                    trigger: 'blur'
+                                }],
+                                props: {
+                                    filterable: true
+                                },
+                            }, {
+                                label: '文本域',
+                                type: 'textarea',
+                                field: 'description',
+                            }, ],
+                            //requireRow: true,//需要选中一行才能点击使用
+                            submitUrl: "http://127.0.0.1:12005/AMP/operationsManageAction/test",
+                            manual: true, //手动提交,需要配合submitUrl和handler函数一起使用，毕竟表单提交不可能不要URL的吧?
+                            module: newUploaderMod, //弹出框的附加模块,这里就表示上传
+                            onShow: function (rawData) {
+                                console.log('onShow', rawData)
+                            },
+                            handler: function (innerVm, formData, rawData, cb, ref, url) {
+                                console.log("************************")
+                                console.log(formData)
+                                //这里就是manual:true时的回调函数,url其实就是submitUrl
+                                _this.$refs.actionForm.validate(function (valid, object) {
+                                    console.log('validate', valid, object)
+                                    if (!valid) {
+                                        cb()
+                                        return
+                                    }
+                                    $.ajax({
+                                        method: "POST",
+                                        url: _url,
+                                        data: formData,
+                                        processData: false,
+                                        contentType: false,
+                                    }).done(function (resData) {
+                                        // var resData = JSON.parse(res)
+                                        if (resData.code !== 100) {
+                                            innerVm.$message.error(resData.desc ||
+                                                '操作失败');
+                                            cb()
+                                            return
+                                        }
+                                        innerVm.$message.success("操作成功");
+                                        innerVm.refreshTable()
+                                        innerVm.getComp(ref).hide()
+                                        cb()
+                                    }).fail(function (res) {
+                                        console.error(res)
+                                        innerVm.$message.error("网络异常");
+                                        cb()
+                                    })
+                                })
+                            },
+                        },
+                        {
+                            ref: 'addDialog',
+                            title: '带动态表格新增',
+                            width: '1100px',
+                            items: [{
+                                label: '下拉框',
+                                type: 'input',
+                                field: 'orgId',
+                                rules: [{
+                                    message: '请选择哈哈1111',
+                                    trigger: 'blur'
+                                }],
+                                props: {
+                                    filterable: true
+                                },
+                            }, {
+                                type: 'dynamicTable',
+                                field: 'tableField',
+                                width: '1000px',
+                                cols: [{
+                                        prop: "title",
+                                        label: "标题",
+                                        type: 'textarea',
+
+
+                                    },
+                                    {
+                                        prop: "createTime",
+                                        label: "创建时间",
+                                        type: 'input',
+
+                                        props: {
+                                            filterable: true,
+                                            placeholder: '请选择科室'
+                                        },
+                                        rules: [{
+                                            message: '请选择科室',
+                                            trigger: 'blur',
+                                            required: false,
+                                        }],
+                                    },
+                                    {
+                                        prop: "author",
+                                        label: "性别",
+                                        type: 'select',
+                                        optionsUrl: "./orgdata.json",
+
+
+                                    }, {
+                                        prop: "address",
+                                        label: "地址",
+                                        type: 'input',
+
+                                        props: {
+                                            filterable: true,
+                                            placeholder: '这是地址'
+                                        },
+                                        rules: [{
+                                            message: '这是地址',
+                                            trigger: 'blur',
+                                            required: false,
+                                        }],
+                                    }, {
+                                        prop: "phone",
+                                        label: "电话",
+                                        type: 'time',
+                                        props: {
+                                            placeholder: '请选择时间',
+                                            'value-format': 'HH:mm',
+                                            format: "HH:mm",
+                                        },
+                                        rules: [{
+                                            message: '请选择时间',
+                                            trigger: 'blur'
+                                        }],
+
+                                    }, 
+                                    {
+                                        prop: "files",
+                                        label: "文件",
+                                        type: 'upload',
+                                    }
+                                ],
+                            }, {
+                                label: '下拉框',
+                                type: 'input',
+                                field: 'orgId2',
+                                rules: [{
+                                    message: '请选择哈哈1111',
+                                    trigger: 'blur'
+                                }],
+                                props: {
+                                    filterable: true
+                                },
+                            }, ],
+                            submitUrl: "http://127.0.0.1:12002/iom/memberManagementAction/test",
+                            manual: false, //手动提交,需要配合submitUrl和handler函数一起使用，毕竟表单提交不可能不要URL的吧?
+                            onShow: function (rawData) {
+                                console.log('onShow', rawData)
+                            },
+                            handler: function (innerVm, formData, rawData, cb, ref, url) {
+                                //这里就是manual:true时的回调函数,url其实就是submitUrl
+                                // _this.$refs.actionForm.validate(function (valid, object) {
+                                //     console.log('validate', valid, object)
+                                //     if (!valid) {
+                                //         cb()
+                                //         return
+                                //     }
+                                //     $.ajax({
+                                //         method: "POST",
+                                //         url: _url,
+                                //         data: formData,
+                                //         processData: false,
+                                //         contentType: false,
+                                //     }).done(function (resData) {
+                                //         // var resData = JSON.parse(res)
+                                //         if (resData.code !== 100) {
+                                //             innerVm.$message.error(resData.desc ||
+                                //                 '操作失败');
+                                //             cb()
+                                //             return
+                                //         }
+                                //         innerVm.$message.success("操作成功");
+                                //         innerVm.refreshTable()
+                                //         innerVm.getComp(ref).hide()
+                                //         cb()
+                                //     }).fail(function (res) {
+                                //         console.error(res)
+                                //         innerVm.$message.error("网络异常");
+                                //         cb()
+                                //     })
+                                // })
+                            },
+                        },
+                        {
+                            ref: 'edit1Dialog',
+                            title: '带动态表格编辑',
+                            width: '1100px',
+                            items: [{
+                                label: '下拉框',
+                                type: 'input',
+                                field: 'orgId',
+                                rules: [{
+                                    message: '请选择哈哈1111',
+                                    trigger: 'blur'
+                                }],
+                                props: {
+                                    filterable: true
+                                },
+                            }, {
+                                type: 'dynamicTable',
+                                field: 'tableField',
+                                width: '980px',
+                                cols: [{
+                                        prop: "title",
+                                        label: "标题",
+                                        type: 'textarea',
+
+                                    },
+                                    {
+                                        prop: "createTime",
+                                        label: "创建时间",
+                                        type: 'input',
+
+                                        props: {
+                                            filterable: true,
+                                            placeholder: '请选择科室'
+                                        },
+                                        rules: [{
+                                            message: '请选择科室',
+                                            trigger: 'blur',
+                                            required: true,
+                                        }],
+                                    },
+                                    {
+                                        prop: "author",
+                                        label: "性别",
+                                        type: 'select',
+                                        optionsUrl: "./orgdata.json",
+
+
+                                    }, {
+                                        prop: "address",
+                                        label: "地址",
+                                        type: 'input',
+                                        props: {
+                                            filterable: true,
+                                            placeholder: '这是地址'
+                                        },
+                                        rules: [{
+                                            message: '这是地址',
+                                            trigger: 'blur',
+                                            required: true,
+                                        }],
+                                    }, {
+                                        prop: "phone",
+                                        label: "作者",
+                                        type: 'input'
+
+                                    },
+                                    {
+                                        prop: "files",
+                                        label: "文件",
+                                        type: 'upload',
+                                       
+                                       
+
+                                    }
+                                ],
+                            }],
+                            submitUrl: "http://127.0.0.1:12002/iom/memberManagementAction/test",
+                            manual: false, //手动提交,需要配合submitUrl和handler函数一起使用，毕竟表单提交不可能不要URL的吧?
+                            requireRow: true,
+                            onShow: function (rawData) {
+                                console.log('onShow', rawData)
+                            },
+                            handler: function (innerVm, formData, rawData, cb, ref, url) {
+                                //这里就是manual:true时的回调函数,url其实就是submitUrl
+                                // _this.$refs.actionForm.validate(function (valid, object) {
+                                //     console.log('validate', valid, object)
+                                //     if (!valid) {
+                                //         cb()
+                                //         return
+                                //     }
+                                //     $.ajax({
+                                //         method: "POST",
+                                //         url: _url,
+                                //         data: formData,
+                                //         processData: false,
+                                //         contentType: false,
+                                //     }).done(function (resData) {
+                                //         // var resData = JSON.parse(res)
+                                //         if (resData.code !== 100) {
+                                //             innerVm.$message.error(resData.desc ||
+                                //                 '操作失败');
+                                //             cb()
+                                //             return
+                                //         }
+                                //         innerVm.$message.success("操作成功");
+                                //         innerVm.refreshTable()
+                                //         innerVm.getComp(ref).hide()
+                                //         cb()
+                                //     }).fail(function (res) {
+                                //         console.error(res)
+                                //         innerVm.$message.error("网络异常");
+                                //         cb()
+                                //     })
+                                // })
+                            },
+                        }
+                    ],
+                }
+            },
+            methods: {
+                currentRowChange: function (val) {
+                    this.currentRow = val
+                },
+                handleSuccess(response, file, fileList) {
+                    this.myFileList.push(file)
+                },
+                handleRemove(file) {
+                    //这里要通知后台删除这个文件
+                    console.log(file);
+                    console.log(this.myFileList)
+                    this.myFileList = []
+                },
+                handlePictureCardPreview(file) {
+                    //这两个参数要配合upload下面被注释的代码使用,其实就是在upload下方显示这个图片
+                    this.dialogImageUrl = file.url;
+                    this.dialogVisible = true;
+                    window.open(file.url)
+                },
+                handleDownload(file) {
+                    //去后台下载
+                    console.log(file);
+                },
+                showProgress: function () {
+                    //this.$refs.base.getComp('progressDialog').show()
+                },
+                generateUUID: function () {
+                    var d = new Date().getTime();
+                    if (window.performance && typeof window.performance.now === "function") {
+                        d += performance.now(); //use high-precision timer if available
+                    }
+                    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        var r = (d + Math.random() * 16) % 16 | 0;
+                        d = Math.floor(d / 16);
+                        return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                    });
+
+                    var uuid = uuid.replace(/-/g, "");
+
+                    return uuid;
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

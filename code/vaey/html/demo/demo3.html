@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>demo01</title>
+    <link rel="stylesheet" href="../../lib/element-ui/element.css">
+    <script src="../../common/constant.js"></script>
+    <script src="../../common/utils.js"></script>
+    <script src="../../lib/vue/vue.js"></script>
+    <script src="../../lib/element-ui/element.js"></script>
+    <script src="../../lib/jquery/jquery3.5.1.js"></script>
+    <script src="../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../component/table/table.css">
+    <script src="../../component/table/table.js"></script>
+    <script src="../../component/formDialog/formDialog.js"></script>
+    <link rel="stylesheet" href="../../component/formDialog/formDialog.css">
+</head>
+<body>
+<div id="app">
+    <base-component ref="base"
+                    @current-row-change="currentRowChange"
+                    @row-click="rowClick"
+                    :dialogs="dialogs"
+                    :table="table"
+                    :form="form">
+    </base-component>
+</div>
+<script>
+
+    var GLOBAL_ENUM = {
+        SEX: {
+            CONVERT_TEXT: 'sexText',
+            CONVERT: {
+                1: '男',
+                2: '女',
+            }
+        }
+    }
+
+    var vueObj = new Vue({
+        el: '#app',
+        data: function() {
+
+            function test2() {
+                alert("ok")
+            }
+
+            let _this = this
+            return {
+                currentRowChangecurrentRow: null,
+                multiRow: null,
+                form: {
+                    //操作按钮
+                    buttons: [
+                        {type: 'edit', bindRef: 'editDialog', label: '选中并带数据弹出层'},
+                        {type: 'delete', url: "http://localhost:12006/WS/api/deleteurl", fields: ['opId', 'title'], message:"弹出删除的提示,有默认提示可以不填写哈", label: '按钮四'},
+                        {type: 'notice', url: "http://localhost:12006/WS/api/noticeurl", fields: ['opId', 'title'], message:"弹出提示的提示,默认是删除,最后还是要写提示", label: '通知后台'},
+                        {type: 'delete', url: "http://localhost:12006/WS/api/deleteurl", fields: ['opId', 'title'], label: '按钮6', cancel(){
+                                console.log("删除的取消提示")
+                            }, click :function(){
+                                console.log("执行之间的事件,执行完就会直接返回了")
+                            }},
+                        {
+                            type: 'warning', label:'点击触发事件',click: function () {
+                                _this.getBaseQueryParam()
+                            }
+                        }, {type: 'delete', multi:true, url: "http://localhost:12006/WS/api/deleteurlArray", fields: ['opId', 'title'], label: '多选删除'},
+                    ],
+                    uploadButtons: [
+                        {
+                            type: 'add',
+                            label: '点击上传文件1',
+                            name: 'test',//文件上传时对应的名称
+                            action: 'http://localhost:12006/WS/api/uploadTest',//后台action
+                            accept: '.xls,.xlsx',//允许上传的类型
+                            size: 1,//文件大小(默认是1,目前仅为1)
+                            required: true,
+                            fields: ['opId', 'title'],//如果要传参数则当前行为必填项
+                            onSuccess: function() {
+                                alert("ok")
+                            },
+                            // onCall: 'test-call'
+                        },
+                        {
+                            type: 'add',
+                            label: '点击上传文件2',
+                            action: 'http://127.0.0.1:12002/iom/api/uploadTest',//后台action
+                            accept: '.pdf',//允许上传的类型
+                            size: 1,//文件大小(默认是1,目前仅为1)
+                            required: true,
+                            fields: ['opId']
+                        }
+                    ],
+                    //查询条件
+                    inputs: [
+                        {name: 'inputFieldName', placeholder: '我是输入框', value: '输入test'},
+                    ],
+                },
+                table: {
+                    url: "tabledemodata.json",
+                    //url: "http://localhost:12006/WS/api/queryTest",
+                    // manual: true,
+                    // handler: function() {
+                    //     console.log("handler")
+                    // },
+                    dataProcess: function (datas) {
+                        return datas
+                    },
+                    cols: [
+                        {
+                            prop: "title",
+                            label: "标题",
+                            width: 100
+                        },
+                        {
+                            prop: "createTime",
+                            label: "创建时间",
+                        },
+                        {
+                            prop: "sexText",
+                            label: "性别"
+                        },{
+                            prop: "address",
+                            label: "地址"
+                        },{
+                            prop: "author",
+                            label: "作者"
+                        }
+                    ],
+                    enumMap: {
+                        sex: GLOBAL_ENUM.SEX
+                    },
+                    params: {
+                        'userName': 'yzl'
+                    },
+                    sort:'title'
+                },
+                dialogs:[{
+                    ref: 'editDialog',
+                    title: '编辑',
+                    buttons:[{
+                        label: '测试1',
+                        type: 'primary',
+                        url: 'test1',
+                    },{
+                        label: '测试2',
+                        type: 'success',
+                        url: 'test2',
+                    },{
+                        label: '测试2',
+                        url: 'test3',
+                    }],
+                    items: [
+                        {
+                            label: '标题',
+                            type: 'input',
+                            field: 'title',
+                            readonly: true,
+                            props: {
+                                placeholder: '请输入标题'
+                            },
+                            rules: [{required: true, message: '请输入用户名', trigger: 'blur'}],
+                        },
+                        {
+                            label: '创建时间',
+                            type: 'input',
+                            field: 'createTime',
+                            props: {
+                                placeholder: '请输入创建时间'
+                            },
+                        },
+                        {
+                            label: '性别',
+                            type: 'input',
+                            field: 'sex',
+                            props: {
+                                placeholder: '请输入性别'
+                            },
+                            // rules: [{pattern: /^1[3456789]\d{9}$/, message: '请输入正确的手机', trigger: 'blur'}],
+                        }
+                    ],
+                    paramFields: ['opId'],
+                    enumMap: {
+                        sex: GLOBAL_ENUM.SEX
+                    },
+                    requireRow: true,
+                    submitUrl: "http://localhost:12006/WS/api/addForm",
+                    manual: true,
+                    handler: function (innerVm, formData, rawData, cb, ref, url) {
+                        console.log("test edit handler")
+                        console.log(formData);
+                        console.log(innerVm, formData, rawData, cb, ref, url);
+                        _this.$message.error("配置manual改为主动提交至后台，这里演示无法提交")
+                    }
+                }],
+            }
+        },
+        mounted: function (){
+
+        },
+        methods: {
+            rowClick: function (row) {
+                this.$refs.base.showFormDialog("editDialog")
+            },
+            currentRowChange: function (val) {
+                this.currentRow = val
+                console.log("currentRowChange");
+                console.log(val)
+            }
+        }
+    })
+
+</script>
+</body>
+</html>

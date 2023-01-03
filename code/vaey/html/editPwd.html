@@ -1,0 +1,240 @@
+<html lang="zh-CN">
+<!-- 修改密码 -->
+
+<head>
+  <meta charset="UTF-8">
+  <title>修改密码</title>
+
+  <link rel="stylesheet" href="/iom/static/lib/element-ui/element.css">
+  <link rel="stylesheet" href="/iom/static/css/common.css">
+
+  <script src="/iom/static/lib/vue/vue.js"></script>
+  <script src="/iom/static/lib/element-ui/element.js"></script>
+  <script src="/iom/static/lib/jquery/jquery-3.3.1.min.js"></script>
+  <script src="/iom/static/lib/echarts/echarts.common.min.js"></script>
+
+  <script src="/iom/static/component/base/base.js"></script>
+  <link rel="stylesheet" href="/iom/static/component/table/table.css">
+  <script src="/iom/static/component/table/table.js"></script>
+  <link rel="stylesheet" href="/iom/static/component/formDialog/formDialog.css">
+  <script src="/iom/static/component/formDialog/formDialog.js"></script>
+
+  <script src="/iom/static/common/utils.js"></script>
+  <script src="/iom/static/common/config.js"></script>
+</head>
+
+<body>
+  <div style="height: 30px"></div>
+  <div id="vue">
+    <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="140px"
+      style="width: 300px; margin-left: 300px;">
+
+      <el-form-item label="用户名" prop="userName">
+        <el-input placeholder="请输入用户名" v-model="ruleForm.userName"></el-input>
+      </el-form-item>
+
+      <el-form-item label="登录名" prop="userId">
+        <el-input placeholder="请输入登录名" v-model="ruleForm.userId" autocomplete="off"></el-input>
+      </el-form-item>
+
+      <el-form-item label="手机号" prop="userPhone">
+        <el-input placeholder="请输入手机号" v-model="ruleForm.userPhone" autocomplete="off"></el-input>
+      </el-form-item>
+
+      <el-form-item label="电子邮箱" prop="userEmail">
+        <el-input placeholder="请输入电子邮箱" v-model="ruleForm.userEmail" autocomplete="off"></el-input>
+      </el-form-item>
+
+      <el-form-item label="工作单位" prop="workAddress">
+        <el-input placeholder="请输入工作单位" v-model="ruleForm.workAddress" autocomplete="off"></el-input>
+      </el-form-item>
+
+      <el-form-item label="所属机构">
+        <el-select
+                v-model="ruleForm.orgId"
+                filterable
+                placeholder="请选择机构">
+          <el-option
+                  v-for="item in orgs"
+                  :key="item.value"
+                  :label="item.name"
+                  :value="item.value">
+          </el-option>
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="请输入旧密码" prop="oldPwd">
+        <el-input type="password" v-model="ruleForm.oldPwd" ref="oldPwd" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item label="请输入新密码" prop="pass">
+        <el-input type="password" v-model="ruleForm.pass" ref="pass" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item label="请再次确认新密码" prop="checkPass">
+        <el-input type="password" v-model="ruleForm.checkPass" ref="checkPass" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+        <el-button @click="resetForm('ruleForm')">重置</el-button>
+      </el-form-item>
+
+    </el-form>
+  </div>
+  <script>
+    var v = new Vue({
+      el: '#vue',
+      data() {
+        this.getOrgs();
+        this.getUserInfo();
+        return {
+          orgs: [],
+          ruleForm: {
+            pass: '',
+            checkPass: '',
+            oldPwd: '',
+            userName:'',
+            userPhone:'',
+            userId:'',
+            userEmail:'',
+            orgId:'',
+            workAddress: '',
+          },
+          rules: {
+            userPhone: [
+              { required: true, message: '请输入手机号', trigger: 'blur' },
+              { pattern: /^((13[0-9])|(14[5,7,9])|(15([0-3]|[5-9]))|(166)|(17[0,1,3,5,6,7,8])|(18[0-9])|(19[8|9]))\d{8}$/, message: '目前只支持中国大陆的手机号码' }
+            ],
+            userName: [
+              { required: true, message: '请输入用户名', trigger: 'blur' },
+            ],
+            userId: [
+              { required: true, message: '请输入登录名', trigger: 'blur' },
+            ],
+            orgId: [
+              { required: true, message: '请选择机构', trigger: 'blur' },
+            ]
+          }
+        };
+      },
+      methods: {
+        submitForm(formName) {
+          var _this = this;
+          _this.$refs[formName].validate((valid) => {
+
+            var oldPwd = _this.ruleForm.oldPwd;
+            var pass = _this.ruleForm.pass;
+            var checkPass = _this.ruleForm.checkPass;
+
+            if(oldPwd && pass && checkPass) {
+
+              if(checkPass != pass) {
+                _this.$message({
+                  message: '新密码不一致,请重新填写',
+                  type: 'error'
+                });
+              }
+
+            }else if(!oldPwd && !pass && !checkPass) {
+              pass = "";
+              oldPwd = "";
+            }else if(!oldPwd){
+              _this.$refs.oldPwd.focus();
+              _this.$message({
+                message: '请填写旧密码',
+                type: 'error'
+              });
+            }else if(!pass) {
+              _this.$refs.pass.focus();
+              _this.$message({
+                message: '请填写新密码',
+                type: 'error'
+              });
+            }else if(!checkPass) {
+              _this.$refs.checkPass.focus();
+              _this.$message({
+                message: '请再次填写新密码',
+                type: 'error'
+              });
+            }
+
+            if (valid) {
+              $.ajax({
+                method: "POST",
+                url: "/iom/userAction/editSelf",
+                data: {"pwd": pass,
+                       "oldPwd": oldPwd,
+                       "userName": _this.ruleForm.userName,
+                       "userId": _this.ruleForm.userId,
+                       "userEmail": _this.ruleForm.userEmail,
+                       "userPhone": _this.ruleForm.userPhone,
+                       "orgId": _this.ruleForm.orgId,
+                       "workAddress": _this.ruleForm.workAddress
+                },
+                dataType:'json',
+              }).done(function (resData) {
+                // var resData = JSON.parse(res)
+                if (resData.code !== 100) {
+                  _this.$message.error(resData.desc || '操作失败');
+                  return
+                }
+                _this.$message.success("操作成功");
+                _this.$refs[formName].resetFields();
+              }).fail(function (res) {
+                console.error(res)
+                _this.$message.error("网络异常");
+              })
+            } else {
+              console.log('error submit!!');
+              return false;
+            }
+          });
+        },
+        resetForm(formName) {
+          this.$refs[formName].resetFields();
+        },
+        getOrgs() {
+            var _this = this;
+            $.ajax({
+              method: "GET",
+              url: "/iom/commboxAction/api/getWorkUnitAddress",
+              data: {},
+              dataType:'json',
+            }).done(function (resData) {
+              _this.orgs = resData;
+            }).fail(function (res) {
+              console.error(res)
+              _this.$message.error("网络异常");
+            })
+        },
+        getUserInfo() {
+            var _this = this;
+            $.ajax({
+              method: "GET",
+              url: "/iom/userAction/getUserInfo",
+              data: {},
+              dataType:'json',
+            }).done(function (resData) {
+
+              var code = resData.code;
+
+              if(code == 100 ){
+                var datas = resData.datas
+                _this.ruleForm.userId = datas[0].userId;
+                _this.ruleForm.userName = datas[0].name;
+                _this.ruleForm.userPhone = datas[0].userPhone;
+                _this.ruleForm.userEmail = datas[0].userEmail;
+                _this.ruleForm.workAddress = datas[0].workAddress;
+                _this.ruleForm.orgId = datas[0].orgId;
+              }
+
+            }).fail(function (res) {
+              console.error(res)
+              _this.$message.error("网络异常");
+            })
+        }
+      }
+    });
+
+  </script>
+</body>
+
+</html>

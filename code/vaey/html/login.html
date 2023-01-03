@@ -1,0 +1,135 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>互医健康UI系统展示</title>
+
+    <link rel="stylesheet" href="../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../css/common.css">
+
+    <script src="../lib/vue/vue.js"></script>
+    <script src="../lib/element-ui/element.js"></script>
+    <script src="../lib/jquery/jquery3.5.1.js"></script>
+
+    <style>
+        .contain{
+            background-image:url("../img/login_bg.png");
+            background-repeat:no-repeat;
+            background-size: cover;
+            height: 100%;
+            width:100%;
+            position: fixed;
+        }
+        .login-box {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: -275px;
+            margin-top: -160px;
+            width: 550px;
+            height: 360px;
+            /*background-color: rgba(103,222,181,0.7);*/
+            overflow: hidden;
+            /*box-shadow: 0px 0px 5px 5px #67DEB5;*/
+            text-align: center;
+            padding: 120px 100px 0 100px;
+            box-sizing: border-box;
+            background-image:url("../img/login_box.png");
+            background-repeat:no-repeat;
+            background-size: cover;
+        }
+        .login-form{
+            margin-left: 60px;
+        }
+        .login-name{
+            font-size: 40px;
+            color: #fff;
+        }
+        .el-input__inner {
+            border: none;
+            font-size: 18px;
+        }
+        .el-form-item__error {
+            font-size: 14px;
+            padding-top: 8px;
+            padding-left: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="contain">
+    <div class="login-box" id="loginForm" >
+        <el-form ref="loginForm" :model="loginForm" :rules="rules" lable-width="80px" class="login-form">
+            <!--<el-form-item class="login-item">-->
+                <!--<h1 class="login-name" style="">互&nbsp;医&nbsp;健&nbsp;康</h1>-->
+            <!--</el-form-item>-->
+            <el-form-item prop="userId" class="login-item">
+                <el-input v-model.trim="loginForm.userId" placeholder="请输入帐号" @keyup.enter.native="submitForm('loginForm')" style="border: none;">
+                    <!--<template slot="prepend">帐号</template>-->
+                </el-input>
+            </el-form-item>
+            <el-form-item prop="password" class="login-item" style="margin-top: 37px;">
+                <el-input v-model.trim="loginForm.password" type="password" placeholder="请输入密码" @keyup.enter.native="submitForm('loginForm')" style="border: none;">
+                    <!--<template slot="prepend">密码</template>-->
+                </el-input>
+            </el-form-item>
+            <el-form-item class="login-item" style="margin-left: -40px; margin-right: 20px; margin-top: 35px; opacity: 0;">
+                <el-button type="default" style="width:100%" @click="submitForm('loginForm')">登&nbsp;&nbsp;录</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+</div>
+
+<script type="text/javascript">
+  new Vue({
+    el:'#loginForm',
+    data: function(){
+      return{
+        loginForm:{
+          userId:'',
+          password:''
+        },
+        rules:{
+          userId:[
+            {required:true,message:"请输入账号",trigger:'blur'}
+          ],
+          password:[
+            {required:true,message:"请输入密码",trigger:'blur'}
+          ]
+        }
+      }
+    },
+    methods : {
+      submitForm: function(formName) {
+        var _this = this;
+        this.$refs[formName].validate(function(valid) {
+          if (valid) {
+            window.location.href = "index.html"
+            // $.ajax({
+            //   method: "POST",
+            //   url: "/BNWeb/loginAction/login",
+            //   data:  _this.loginForm
+            // }).done(function( resData ) {
+            //   // var resData = JSON.parse(res)
+            //   console.log(resData)
+            //   console.log(JSON.stringify(resData))
+            //   if(resData.code == 100) {
+            // 	  window.location.href = "/BNWeb/loginAction/index?userName=" + encodeURI(resData.datas[0].userName)
+            //   }else{
+            // 	  _this.$message.error(resData.desc);
+            //       return false;
+            //   }
+            // }).fail(function (res) {
+            //   _this.$message.error("验证失败！");
+            //   return false;
+            // })
+          } else {
+            _this.$message.error("验证失败！");
+            return false;
+          }
+        });
+      }
+    }
+  });
+</script>
+</body>
+</html>

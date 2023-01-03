@@ -1,0 +1,3688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <link rel="stylesheet" href="../../../lib/element-ui/element.css">
+    <link rel="stylesheet" href="../../../css/common.css">
+
+    <script src="../../../lib/vue/vue.js"></script>
+    <script src="../../../lib/element-ui/element.js"></script>
+    <script src="../../../lib/jquery/jquery-3.3.1.min.js"></script>
+    <script src="../../../lib/echarts/echarts.min.js"></script>
+    <script src="../../../lib/echarts/fuzhou.js"></script>
+
+    <script src="../../../component/base/base.js"></script>
+    <link rel="stylesheet" href="../../../component/table/table.css">
+    <script src="../../../component/table/table.js"></script>
+    <link rel="stylesheet" href="../../../component/formDialog/formDialog.css">
+    <script src="../../../component/formDialog/formDialog.js"></script>
+
+    <script src="../../../common/utils.js"></script>
+    <script src="../../../common/config.js"></script>
+
+    <!--百度地图-->
+    <!--<script type="text/javascript" src="//api.map.baidu.com/api?v=3.0&ak=XiLP7c75oI72PL4meyDSfinUmEv1dUxD"></script>-->
+    <!--高德地图-->
+    <script type="text/javascript"
+            src="https://webapi.amap.com/maps?v=1.4.15&key=fc27f0ddbbdcc9f93e3df6d202f34c4b&plugin=AMap.DistrictSearch&plugin=AMap.Geocoder"></script>
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .grid-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .data-table {
+            color: #fff;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            font-size: 18px;
+            border: 2px solid #129eed;
+            line-height: 2.5;
+        }
+
+        .data-table td {
+            font-size: 16px;
+            text-align: center;
+            line-height: 2;
+            border: 1px solid #0577b6;
+        }
+
+        .map-box {
+            height: 100%;
+            border: 1px solid #0577b6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-box__hd {
+            font-size: 18px;
+            color: #fff;
+            text-align: center;
+            line-height: 2.5;
+            font-weight: bold;
+            border: 2px solid #129eed;
+        }
+
+        .map-box__cont {
+            padding: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .map-box__cont img {
+            width: 100%;
+        }
+
+        .map-box__cont .img-bg {
+            background-image: url(/BNWeb/views/img/gulouqu_2.png);
+            background-size: contain;
+            background-repeat: no-repeat;
+            width: 100%;
+            height: 100%;
+            background-position: center;
+        }
+
+        .chart-box {
+            height: 100%;
+            border: 1px solid #0577b6;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chart-box > div {
+            flex: 1;
+        }
+
+        .chart-box .close-btn {
+            position: absolute;
+            right: 1%;
+            top: 1%;
+            color: #fff;
+            font-size: 24px;
+            z-index: 9;
+        }
+
+        .BMap_cpyCtrl {
+            display: none !important;
+        }
+
+        .anchorBL {
+            display: none !important;
+        }
+
+        .amap-marker-label {
+            border: 0;
+            background-color: transparent;
+        }
+
+        .info {
+            position: relative;
+            top: 0;
+            right: 0;
+            min-width: 0;
+            padding: .5rem .75rem;
+            border-radius: .25rem;
+            background-color: white;
+            width: auto;
+            border-width: 0;
+            box-shadow: 0 2px 6px 0 rgba(114, 124, 245, .5);
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body style="background-image: url('/BNWeb/views/img/dataViewBg.png');">
+<el-container id="vue" style="height: 100%; min-width: 1024px; min-height: 768px;">
+    <el-header height="60px" style="text-align: center; line-height: 60px; margin-top: 30px;">
+        <p style="color: #D9F8FE; font-size: 42px;">鼓楼区卫生监督在线智能监管平台</p>
+    </el-header>
+
+    <el-main style="padding-top: 30px; padding-bottom: 40px;">
+        <el-row :gutter="40" style="height: 100%;">
+            <el-col :span="6" style="height: 100%;">
+                <div class="grid-content">
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);"
+                                               @click="timeBarChart(time, '按时间分布统计', {day: '本日', month: '本月', year: '今年'})"
+                                               style="color: #fff;">按时间分布统计</a></th>
+                        </tr>
+                        <tr>
+                            <td>本日累计</td>
+                            <td>{{time.day}}</td>
+                        </tr>
+                        <tr>
+                            <td>本月累计</td>
+                            <td>{{time.month}}</td>
+                        </tr>
+                        <tr>
+                            <td>今年累计</td>
+                            <td>{{time.year}}</td>
+                        </tr>
+                        <!--<tr><td>周</td><td>{{time.week}}</td></tr>-->
+                    </table>
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);"
+                                               @click="showPieChart(caseType, '按强度分布统计', {superCase: '特大', veryCase: '重大', general: '一般', little: '轻微', other: '非医疗卫生'})"
+                                               style="color: #fff;">按强度分布统计</a></th>
+                        </tr>
+                        <tr>
+                            <td>特大</td>
+                            <td>{{caseType.superCase}}</td>
+                        </tr>
+                        <tr>
+                            <td>重大</td>
+                            <td>{{caseType.veryCase}}</td>
+                        </tr>
+                        <tr>
+                            <td>一般</td>
+                            <td>{{caseType.general}}</td>
+                        </tr>
+                        <tr>
+                            <td>轻微</td>
+                            <td>{{caseType.little}}</td>
+                        </tr>
+                        <tr>
+                            <td>非医疗卫生</td>
+                            <td>{{caseType.other}}</td>
+                        </tr>
+                    </table>
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);"
+                                               @click="showBarChart(process, '按进度分布统计', {handling: '已收', dealing: '在办', handled: '办结'})"
+                                               style="color: #fff;">按进度分布统计</a></th>
+                        </tr>
+                        <tr>
+                            <td>已收投诉举报</td>
+                            <td>{{process.handling}}</td>
+                        </tr>
+                        <tr>
+                            <td>在办投诉举报</td>
+                            <td>{{process.dealing}}</td>
+                        </tr>
+                        <tr>
+                            <td>办结投诉举报</td>
+                            <td>{{process.handled}}</td>
+                        </tr>
+                    </table>
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);"
+                                               @click="showPieChart(satisfaction, '按满意度分布统计', {satisfaction: '满意', basicSatisfaction: '基本满意', noSatisfaction: '不满意', noWrite: '未填写'})"
+                                               style="color: #fff;">按满意度分布统计</a></th>
+                        </tr>
+                        <tr>
+                            <td>满意</td>
+                            <td>{{satisfaction.satisfaction}}</td>
+                        </tr>
+                        <tr>
+                            <td>基本满意</td>
+                            <td>{{satisfaction.basicSatisfaction}}</td>
+                        </tr>
+                        <tr>
+                            <td>不满意</td>
+                            <td>{{satisfaction.noSatisfaction}}</td>
+                        </tr>
+                        <tr>
+                            <td>未填写</td>
+                            <td>{{satisfaction.noWrite}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </el-col>
+            <el-col :span="12" style="height: 100%;">
+                <div class="grid-content">
+                    <div v-show="!chartVisible" class="map-box">
+                        <!--  <div class="map-box__hd">按区域分布统计</div> -->
+                        <div class="map-box__cont">
+                            <!--<div class="img-bg"></div>-->
+                            <div ref="map" id="map" style="width: 100%; height: 100%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div v-show="chartVisible" class="chart-box">
+                        <a href="javascript: void(0);" @click="(chartVisible = false)"
+                           class="close-btn el-icon-circle-close"></a>
+                        <div id="chart"></div>
+                    </div>
+                </div>
+            </el-col>
+            <el-col :span="6" style="height: 100%;">
+                <div class="grid-content">
+                    <!--<table class="data-table">-->
+                    <!--<col width="50%" />-->
+                    <!--<col width="50%" />-->
+                    <!--<tr><th colspan="2">—— 类型分布 ——</th></tr>-->
+                    <!--<tr><td>医疗服务违法违规</td><td>{{event.medical}}</td></tr>-->
+                    <!--<tr><td>妇幼保健违法违规</td><td>{{event.maternalAndChildHealth}}</td></tr>-->
+                    <!--<tr><td>传染病防治违法违规</td><td>{{event.infectious}}</td></tr>-->
+                    <!--<tr><td>公共场所饮用水学校卫生违法违规</td><td>{{event.public}}</td></tr>-->
+                    <!--<tr><td>职业与放射卫生违法违规</td><td>{{event.radiate}}</td></tr>-->
+                    <!--<tr><td>卫生监督员违法违规</td><td>{{event.supervisor}}</td></tr>-->
+                    <!--<tr><td>其他医疗卫生违法违规</td><td>{{event.other}}</td></tr>-->
+                    <!--</table>-->
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);" @click="showBarChart(address, '按区域分布统计')"
+                                               style="color: #fff;">按区域分布统计</a></th>
+                        </tr>
+                        <!-- <tr v-for="(value, key) in address"><td>{{key}}</td><td>{{value}}</td></tr> -->
+                        <tr>
+                            <td>东街街道</td>
+                            <td>{{address['东街街道']}}</td>
+                        </tr>
+                        <tr>
+                            <td>南街街道</td>
+                            <td>{{(address['南街街道'] != null) ?address['南街街道']:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>鼓西街道</td>
+                            <td>{{address['鼓西街道'] != null ? address['鼓西街道']:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>鼓东街道</td>
+                            <td>{{address['鼓东街道'] != null ? address['鼓东街道']:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>水部街道</td>
+                            <td>{{address['水部街道'] != null ? address['水部街道']:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>洪山镇</td>
+                            <td>{{address['洪山镇'] != null ? address['洪山镇']: "0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>温泉街道</td>
+                            <td>{{address['温泉街道'] != null ? address['温泉街道']:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>五凤街道</td>
+                            <td>{{address['五凤街道'] != null ? address['五凤街道'] : "0"}}</td>
+                        </tr>
+                        <tr>
+                            <td>华大街道</td>
+                            <td>{{address['华大街道'] != null ? address['华大街道']: "0" }}</td>
+                        </tr>
+                        <tr>
+                            <td>安泰街道</td>
+                            <td>{{address['安泰街道'] != null ? address['安泰街道']: "0" }}</td>
+                        </tr>
+                    </table>
+                    <table class="data-table">
+                        <col width="50%"/>
+                        <col width="50%"/>
+                        <tr>
+                            <th colspan="2"><a href="javascript:void(0);" @click="showPieChart(org, '按机构分布统计', orgName)"
+                                               style="color: #fff;">按机构分布统计</a></th>
+                        </tr>
+                        <!--<tr v-for="(value, key) in org" v-if="value > 0"><td>{{orgName[key]}}</td><td>{{value}}</td></tr>-->
+                        <tr v-for="(value, key) in org">
+                            <td>{{orgName[key]}}</td>
+                            <td>{{value}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </el-col>
+        </el-row>
+    </el-main>
+</el-container>
+
+<script>
+    var vueObj = new Vue({
+        el: '#vue',
+        data: function () {
+            var _this = this
+
+            return {
+                caseType: {
+                    superCase: 0, //特大案件数
+                    veryCase: 0, //重大案件数
+                    general: 0, //一般案件数
+                    little: 0, //轻微
+                    other: 0, //非医疗卫生
+                    // notEnd: 0 //还在进行的案件数
+                },
+                process: {
+                    handling: 0, //正在处理
+                    dealing: 0, //正在处理
+                    handled: 0 //已结案
+                },
+                satisfaction: {
+                    noSatisfaction: 0, //不满意
+                    basicSatisfaction: 0, //基本满意
+                    satisfaction: 0, //满意
+                    noWrite: 0, //未填写
+                },
+                // event: {
+                //     medical: 0, //医疗服务违法违规案件数
+                //     maternalAndChildHealth: 0, //妇幼保健违法违规案件数
+                //     infectious: 0, //传染病防治违法违规案件数
+                //     public: 0, //公共场所饮用水学校卫生违法违规案件数
+                //     radiate: 0, //职业与放射卫生违法违规案件数
+                //     supervisor: 0, //卫生监督员违法违规案件数
+                //     other: 0 //其他医疗卫生违法违规案件数
+                // },
+                time: {
+                    year: 0, //今年
+                    month: 0, //本月
+                    // week: 0, //本周，暂时不显示
+                    day: 0, //本日
+                    yearNum: [['2019', 10], ['2020', 20]],
+                    monthNum: [['01', 10], ['02', 20], ['03', 30]],
+                    dayNum: [['01', 1], ['02', 2], ['03', 3], ['04', 3], ['05', 3]]
+                },
+                org: {
+                    hospital: 0,
+                    communityHealth: 0,
+                    outpatientDepartment: 0,
+                    clinic: 0,
+                    other: 0,
+                    notHospital: 0,
+                    // careHome: 0,
+                    // healthCenter: 0,
+                    // sanatorium: 0,
+                    // villageHealthCenter: 0,
+                    // firstAid: 0,
+                    // clinicalLab: 0,
+                    // preventionAndTreatment: 0,
+                    // nursing: 0,
+                    // newHospital: 0,
+                    // bloodBank: 0,
+                    // diseaseControl: 0,
+                    // healthSupervision: 0,
+                    // healthImmunit: 0,
+                    // unknowOrg: 0
+                },
+                orgName: {
+                    hospital: '医院',
+                    communityHealth: '社区卫生',
+                    outpatientDepartment: '门诊部',
+                    clinic: '诊所',
+                    other: '其他医疗机构',
+                    notHospital: '非医疗机构',
+                    // careHome: '保健院',
+                    // healthCenter: '卫生院',
+                    // sanatorium: '疗养院',
+                    // villageHealthCenter: '村卫生所',
+                    // firstAid: '急救',
+                    // clinicalLab: '临床检验中心',
+                    // preventionAndTreatment: '专科疾病防治',
+                    // nursing: '护理',
+                    // newHospital: '医疗新业态',
+                    // bloodBank: '血站',
+                    // diseaseControl: '疾病防控',
+                    // healthSupervision: '卫生监督',
+                    // healthImmunit: '卫生检疫',
+                    // unknowOrg: '未知机构'
+                },
+                address: { //有则显示
+
+                },
+                chartVisible: false
+            }
+        },
+        created: function () {
+            this.queryData()
+
+            setInterval(this.queryData, 180000)
+        },
+        mounted: function () {
+            this.initAMap()
+        },
+        methods: {
+            queryData: function () {
+                var _this = this
+                $.ajax({
+                    method: "GET",
+                    url: GLOBAL_API.BIG_DATA.QUERY,
+                    data: {
+                        provinceCode: '350000',
+                        cityCode: '350100',
+                        countyCode: '350102'
+                    }
+                }).done(function (resData) {
+                    // var resData = JSON.parse(res)
+                    if (resData.code !== 100) {
+                        _this.$message.error(resData.desc || '查询失败');
+                        return
+                    }
+                    Object.assign(_this.caseType, resData.caseType)
+                    Object.assign(_this.process, resData.process)
+                    Object.assign(_this.satisfaction, resData.satisfaction)
+                    //Object.assign(_this.event, resData.event)
+                    Object.assign(_this.time, resData.time)
+                    Object.assign(_this.org, resData.org)
+                    Object.assign(_this.address, resData.address)
+
+                }).fail(function (res) {
+                    _this.$message.error("网络异常");
+                })
+            },
+            showPieChart: function (data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                console.log(data, title, alias)
+
+                var chartData = {
+                    legendData: [],
+                    selected: {},
+                    seriesData: [],
+                    countNum: 0
+                }
+
+                Object.keys(data).forEach(function (key) {
+                    var name = key
+                    if (alias != null && alias[key] != null) {
+                        name = alias[key]
+                    }
+                    chartData.legendData.push(name)
+                    chartData.selected[name] = true
+                    chartData.seriesData.push({
+                        name: name,
+                        value: data[key]
+                    })
+                    chartData.countNum = chartData.countNum + data[key]
+                })
+
+                var option = {
+                    color: ['#00b4ff', '#de9984', '#91c5ad', '#f2ae43', '#9ab7e0', '#83d2d5', '#9cccd4', '#ebdb7b', '#edd5a6', '#63d6e5'],
+                    title: {
+                        text: title,
+                        subtext: '总数：' + chartData.countNum,
+                        x: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                        top: '2.5%'
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        // formatter: "{a} <br/>{b} : {c} ({d}%)" //a: series.name, b: seriesData.name, c.seriesData.value
+                        formatter: "{b}: {c} <br/>占比: {d}% " //a: series.name, b: seriesData.name, c.seriesData.value
+                    },
+                    legend: {
+                        type: 'scroll',
+                        orient: 'vertical',
+                        right: 10,
+                        top: 30,
+                        bottom: 30,
+                        data: chartData.legendData,
+                        selected: chartData.selected,
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    },
+                    series: [
+                        {
+                            // name: '数量',
+                            type: 'pie',
+                            radius: '55%',
+                            // center: ['40%', '50%'],
+                            data: chartData.seriesData,
+                            itemStyle: {
+                                emphasis: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+            showBarChart: function (data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                console.log(data, title, alias)
+
+                var chartData = {
+                    xAxisData: [], //x轴标签
+                    seriesData: [], //x轴数据
+                }
+
+                Object.keys(data).forEach(function (key) {
+                    var xLabel = key
+                    if (alias != null && alias[key] != null) {
+                        xLabel = alias[key]
+                    }
+                    chartData.xAxisData.push(xLabel)
+                    chartData.seriesData.push(data[key])
+                })
+
+                var option = {
+                    color: ['#3398DB'],
+                    title: {
+                        text: title,
+                        // subtext: '总计：' + chartData.countNum,
+                        x: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                        top: '2.5%'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                        // trigger: 'item',
+                        // formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true,
+                    },
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: chartData.xAxisData,
+                            axisTick: {
+                                alignWithLabel: true
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: '投诉举报数',
+                            type: 'bar',
+                            barWidth: '25%',
+                            data: chartData.seriesData,
+                            // itemStyle: {
+                            //     emphasis: {
+                            //         shadowBlur: 10,
+                            //         shadowOffsetX: 0,
+                            //         shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            //     }
+                            // }
+                        }
+                    ]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+            timeBarChart: function (data, title, alias) {
+                var _this = this
+                _this.chartVisible = true
+                var yearData = data.yearNum
+                var yearList = new Array();
+                var yearValueList = new Array();
+
+                if (yearData.length) {
+
+                    for (var i = 0; i < yearData.length; i++) {
+
+                        for (var key in yearData[i]) {
+
+                            yearList[i] = key;
+                            yearValueList[i] = yearData[i][key]
+                        }
+                    }
+                }
+
+                var monthData = data.monthNum
+                var monthList = new Array();
+                var monthValueList = new Array();
+
+                if (monthData.length) {
+
+                    for (var i = 0; i < monthData.length; i++) {
+
+                        for (var key in monthData[i]) {
+
+                            monthList[i] = key;
+                            monthValueList[i] = monthData[i][key]
+                        }
+                    }
+                }
+
+
+                var dayData = data.dayNum
+                var dayList = new Array();
+                var dayValueList = new Array();
+
+                if (dayData.length) {
+
+                    for (var i = 0; i < dayData.length; i++) {
+
+                        for (var key in dayData[i]) {
+
+                            dayList[i] = key;
+                            dayValueList[i] = dayData[i][key]
+                        }
+                    }
+                }
+
+                var option = {
+                    color: ['#3398DB'],
+                    title: [{
+                        top: '0.5%',
+                        left: 'center',
+                        text: '按年统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }, {
+                        top: '32.5%',
+                        left: 'center',
+                        text: '按月统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }, {
+                        top: '65%',
+                        left: 'center',
+                        text: '按日统计',
+                        textStyle: {
+                            color: '#fff'
+                        },
+                    }
+                    ],
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+                            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                        }
+                    },
+                    xAxis: [{
+                        data: yearList,
+                        gridIndex: 0,
+                        axisLine: {
+                            alignWithLabel: true,
+                            lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }, {
+                        data: monthList,
+                        gridIndex: 1,
+                        axisLine: {
+                            alignWithLabel: true,
+                            lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }, {
+                        data: dayList,
+                        gridIndex: 2,
+                        axisLine: {
+                            alignWithLabel: true,
+                            lineStyle: {
+                                color: '#fff'
+                            }
+                        }
+                    }],
+                    yAxis: [
+                        {
+                            gridIndex: 0,
+                            type: 'value',
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        {
+                            gridIndex: 1,
+                            type: 'value',
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        {
+                            gridIndex: 2,
+                            type: 'value',
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    ],
+                    grid: [
+                        {y: '5%', height: '25%'},
+                        {y: '37.5%', height: '25%'},
+                        {y: '70%', height: '25%'},
+                    ],
+                    series: [{
+                        type: 'bar',
+                        data: yearValueList,
+                        barWidth: '25%',
+                        xAxisIndex: 0,
+                        yAxisIndex: 0
+                    }, {
+                        type: 'bar',
+                        barWidth: '25%',
+                        data: monthValueList,
+                        xAxisIndex: 1,
+                        yAxisIndex: 1
+                    }, {
+                        type: 'bar',
+                        barWidth: '25%',
+                        data: dayValueList,
+                        xAxisIndex: 2,
+                        yAxisIndex: 2
+                    }]
+                };
+
+                setTimeout(function () {
+                    var myChart = echarts.init(document.getElementById('chart'));
+                    myChart.setOption(option, true);
+                }, 100)
+            },
+            //百度地图
+            // initBMap: function () {
+            //     var map = new BMap.Map("map");
+            //     var cityName = '福建省鼓楼区';
+            //     map.centerAndZoom(cityName, 8);// 初始化地图,设置中心点坐标和地图级别。
+            //
+            //     // map.addControl(new BMap.ScaleControl());                    // 添加比例尺控件
+            //     // map.addControl(new BMap.OverviewMapControl());              //添加缩略地图控件
+            //     map.enableScrollWheelZoom();
+            //
+            //     // map.addControl(new BMap.NavigationControl({ type: BMAP_NAVIGATION_CONTROL_LARGE ,anchor: BMAP_ANCHOR_TOP_LEFT, offset: new BMap.Size(40, 250)}));
+            //     var bdary = new BMap.Boundary();
+            //     bdary.get(cityName, function (rs) {       //获取行政区域
+            //         map.clearOverlays();        //清除地图覆盖物
+            //
+            //         //东西经南北纬的范围
+            //         var EN_JW = "180, 90;";         //东北角
+            //         var NW_JW = "-180,  90;";       //西北角
+            //         var WS_JW = "-180, -90;";       //西南角
+            //         var SE_JW = "180, -90;";        //东南角
+            //         //4.添加环形遮罩层
+            //         var ply1 = new BMap.Polygon(rs.boundaries[0] + SE_JW + SE_JW + WS_JW + NW_JW + EN_JW + SE_JW, {
+            //             strokeColor: "none",
+            //             fillColor: "#033E79",
+            //             fillOpacity: .8,
+            //             strokeOpacity: 1
+            //         }); //建立多边形覆盖物
+            //
+            //         map.addOverlay(ply1);
+            //         //5. 给目标行政区划添加边框，其实就是给目标行政区划添加一个没有填充物的遮罩层
+            //         var ply = new BMap.Polygon(rs.boundaries[0], {strokeWeight: 2, strokeColor: "#00f", fillColor: ""});
+            //         map.addOverlay(ply);
+            //         map.setViewport(ply.getPath());    //调整视野
+            //         // 编写自定义函数,创建标注
+            //         function addMarker(point) {
+            //             var marker = new BMap.Marker(point);
+            //             map.addOverlay(marker);
+            //         }
+            //
+            //         var orgPos = [
+            //             {name: '伟达中医肿瘤医院', lng: 119.349874, lat: 26.081282},
+            //             {name: '福建中医药大学国医堂门诊部', lng: 119.312357, lat: 26.111467},
+            //             {name: '福州鼓楼美贝尔医疗美容门诊部', lng: 119.313042, lat: 26.116676},
+            //             {name: '华济堂中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '博医汇中医门诊部', lng: 119.308711, lat: 26.107843},
+            //             {name: '晶特尔博医汇口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '杏福中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '西岸中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同步名康口腔门诊部', lng: 119.307195, lat: 26.111435},
+            //             {name: '健福堂中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同福福恒博口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '屏山诊所', lng: 104.352675, lat: 28.834275},
+            //             {name: '吴自开诊所', lng: 119.312855, lat: 26.119058},
+            //             {name: '华康诊所', lng: 119.303553, lat: 26.104076},
+            //             {name: '北江诊所', lng: 119.305991, lat: 26.113068},
+            //             {name: '肖贤忠中医外科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '刘彬口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '陈有耕口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '余成达口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '琴湖诊所', lng: 119.305562, lat: 26.1245},
+            //             {name: '为民诊所', lng: 119.305661, lat: 26.124269},
+            //             {name: '康园口腔诊所', lng: 119.313301, lat: 26.104263},
+            //             {name: '金冠口腔诊所', lng: 119.305891, lat: 26.112181},
+            //             {name: '郑榕口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '泰安口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '元亨利贞口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '福州市瑞草灵方医药有限公司中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '康凯诊所', lng: 119.303525, lat: 26.101636},
+            //             {name: '邹继辉口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '林清中医骨伤科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建省御仁投资有限公司中医诊所', lng: 119.305434, lat: 26.114895},
+            //             {name: '福建省儿童保育院卫生站', lng: 119.30882, lat: 26.110646},
+            //             {name: '福建省电力勘测设计院医务室', lng: 119.30626, lat: 26.122507},
+            //             {name: '省公安厅医务室', lng: 119.299178, lat: 26.105132},
+            //             {name: '福建亿力电力物业公司医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '省体育职业技术学院医务室', lng: 119.306166, lat: 26.118805},
+            //             {name: '省体育科学院研究所医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '国家安全厅医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '福建省游泳运动管理中心医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '华大街道社区卫生服务中心', lng: 119.299559, lat: 26.102982},
+            //             {name: '华大街道体育中心社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '华大街道公益社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '华大街道北江社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '华大街道思儿亭社区卫生服务站', lng: 119.313973, lat: 26.119525},
+            //             {name: '华大街道国棉社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '华大街道琴湖社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '华大街道龙峰社区卫生服务站', lng: 119.306876, lat: 26.111991},
+            //             {name: '福建省实验幼儿园医务室', lng: 119.506684, lat: 25.930445},
+            //             {name: '福州鼓楼左海医院', lng: 119.294586, lat: 26.107076},
+            //             {name: '西美医疗美容门诊部', lng: 119.298326, lat: 26.106262},
+            //             {name: '米罗诊所', lng: 119.302344, lat: 26.119202},
+            //             {name: '秀真诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '佳健诊所', lng: 119.280834, lat: 26.113693},
+            //             {name: '陈志灼内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '仁玉综合诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '甘益智内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '康常诊所', lng: 119.27977, lat: 26.113175},
+            //             {name: '红阳诊所', lng: 119.280869, lat: 26.118002},
+            //             {name: '林琳口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '宋文口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '舒蕊口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '江华口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '羽联口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '天元口腔诊所', lng: 119.295067, lat: 26.115116},
+            //             {name: '陈远口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '张洪桥内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '林孟重诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '林建华诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建信息职业技术学院卫生站', lng: 119.315774, lat: 26.037381},
+            //             {name: '福建省福州铜盘中学卫生站', lng: 119.284894, lat: 26.110299},
+            //             {name: '福州三牧小学卫生站', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建省射击运动中心医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '福建省机关管理局屏西幼儿园医务室', lng: 119.292486, lat: 26.115106},
+            //             {name: '福建省国家税务局医务室', lng: 119.088376, lat: 25.881569},
+            //             {name: '福建工程学院软件人才培训基地医务室', lng: 119.201242, lat: 26.041485},
+            //             {name: '福州市天年老人护理中心医务室', lng: 119.296644, lat: 26.117862},
+            //             {name: '五凤街道社区卫生服务中心', lng: 119.28541, lat: 26.109309},
+            //             {name: '福州市鼓楼区五凤街道湖前社区卫生服务中心', lng: 119.301476, lat: 26.122893},
+            //             {name: '五凤街道永恒社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '五凤街道丞相坊社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '五凤街道兰庭社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '五凤街道梅峰社区卫生服务站', lng: 119.285762, lat: 26.106695},
+            //             {name: '五凤街道广厦社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '五凤街道天元社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '五凤街道湖前社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '福州现代妇产医院', lng: 119.301425, lat: 26.114745},
+            //             {name: '福州大学医院', lng: 119.279543, lat: 26.078659},
+            //             {name: '温泉口腔门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '恩泽口腔门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '福能中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '北京同仁堂福建药业连锁有限公司 鼓楼乌山西路中医门诊部', lng: 119.296148, lat: 26.099024},
+            //             {name: '福建省中医药研究院综合门诊部', lng: 119.312261, lat: 26.111556},
+            //             {name: '源盛堂中医门诊部', lng: 119.269309, lat: 26.082184},
+            //             {name: '福港口腔门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '福臻综合门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '鼓楼菁华崇辉中医门诊部', lng: 119.288319, lat: 26.094848},
+            //             {name: '千幕医疗美容门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建馨医堂康复医疗中心', lng: 119.292589, lat: 26.076923},
+            //             {name: '东昇诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '凤凰池诊所', lng: 119.282325, lat: 26.086722},
+            //             {name: '百武诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '复康诊所', lng: 119.285691, lat: 26.07466},
+            //             {name: '北鸿诊所', lng: 119.286026, lat: 26.073208},
+            //             {name: '易康诊所', lng: 119.288756, lat: 26.083251},
+            //             {name: '晨星诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '俞彪内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '闽武内科诊所', lng: 119.281534, lat: 26.07387},
+            //             {name: '德语中医内科诊所', lng: 118.944257, lat: 25.875471},
+            //             {name: '高扬喜内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '陈剑平诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '广湖内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '沈朝阳诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '有为诊所', lng: 119.261488, lat: 26.088976},
+            //             {name: '沈呈发内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '瑞林诊所', lng: 119.269615, lat: 26.082144},
+            //             {name: '来友内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '陈建琛（观前园）诊所', lng: 119.577454, lat: 25.470283},
+            //             {name: '陈丽强内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '赵文中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '黄典凯中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '林清玲中医诊所', lng: 119.288968, lat: 26.077251},
+            //             {name: '省佛教中草药肿瘤诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '健生中西结合诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '张斌口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '潘怀琴口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '任娟口腔诊所', lng: 119.279535, lat: 26.101755},
+            //             {name: '炳霖口腔诊所', lng: 119.289332, lat: 26.077368},
+            //             {name: '文培口腔诊所', lng: 119.289084, lat: 26.083844},
+            //             {name: '西郊口腔诊所', lng: 119.286392, lat: 26.090953},
+            //             {name: '黄怀贞口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '林世辉口腔诊所', lng: 119.280117, lat: 26.085246},
+            //             {name: '明宇医疗美容诊所', lng: 119.283572, lat: 26.074348},
+            //             {name: '陈瑛口腔诊所', lng: 119.257037, lat: 26.093737},
+            //             {name: '吴翊乐儿科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '晨光诊所', lng: 119.33332, lat: 26.093327},
+            //             {name: '俞友利诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '先锦美容皮肤科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '林杰中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '葛兰兰口腔诊所', lng: 119.287938, lat: 26.101476},
+            //             {name: '李明中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '何兴潭口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '黄子安口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '福州市儿童福利院医务室', lng: 119.278514, lat: 26.084959},
+            //             {name: '中科院福建物质结构研究所卫生站', lng: 119.271697, lat: 26.081419},
+            //             {name: '福州市聋哑学校卫生站', lng: 119.283295, lat: 26.09002},
+            //             {name: '福建工贸学校卫生站', lng: 119.258294, lat: 26.100677},
+            //             {name: '闽江职业大学医务室', lng: 119.355319, lat: 26.079762},
+            //             {name: '鼓楼区洪山镇金牛山社区家园医务室', lng: 119.266792, lat: 26.085696},
+            //             {name: '福建师范大学文博附属中学卫生站', lng: 119.315858, lat: 26.041657},
+            //             {name: '福州教育附属中学医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '福州市公安局精神病收容管理所医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '福建省福州二十二中学医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '金太阳老年公寓医务室', lng: 118.934303, lat: 25.87467},
+            //             {name: '经济学校医务室', lng: 119.260998, lat: 26.110063},
+            //             {name: '五福缘养护中心医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '洪山镇社区卫生服务中心', lng: 119.287882, lat: 26.079848},
+            //             {name: '洪山镇金牛山社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '洪山镇兴园社区卫生服务站', lng: 119.294313, lat: 26.075722},
+            //             {name: '洪山镇福屿社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '洪山镇象山社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '洪山镇锦江社区卫生服务站', lng: 119.278144, lat: 26.073885},
+            //             {name: '洪山镇洪山桥社区卫生服务站', lng: 119.26039, lat: 26.085876},
+            //             {name: '洪山镇国光社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '洪山镇凤湖社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '李杰口腔诊所', lng: 119.294328, lat: 26.079632},
+            //             {name: '苏杭中医外科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '邓志国中西医结合诊所', lng: 119.253964, lat: 26.060272},
+            //             {name: '福州同道口腔医院', lng: 119.288291, lat: 26.082061},
+            //             {name: '福建三博福能脑科医院', lng: 119.284003, lat: 26.092877},
+            //             {name: '福能总医院', lng: 119.318613, lat: 26.137415},
+            //             {name: '福州金域医学检验所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建省医学会西红综合门诊部', lng: 119.304546, lat: 26.100066},
+            //             {name: '铭医(固生)堂综合门诊部', lng: 119.299445, lat: 26.097592},
+            //             {name: '博方堂中医门诊部', lng: 119.315091, lat: 26.06586},
+            //             {name: '福州鼓楼新永同惠中医门诊部', lng: 119.289723, lat: 26.095735},
+            //             {name: '同和堂中医门诊部', lng: 119.292236, lat: 26.097658},
+            //             {name: '全育中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同福医西湖口腔门诊部', lng: 119.295489, lat: 26.093477},
+            //             {name: '康之美口腔门诊部', lng: 119.298579, lat: 26.092935},
+            //             {name: '福州科尔口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '福州鼓楼名韩医疗美容门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '爱尔丽（福州）医学美容门诊部', lng: 119.322719, lat: 26.088154},
+            //             {name: '毛博医疗美容门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '玛恩医疗美容门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '鼓楼好安心中医门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州鼓楼元吉综合门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '达明诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '世英内科诊所', lng: 119.30261, lat: 26.09396},
+            //             {name: '朱传霞中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '金福康口腔诊所', lng: 119.306958, lat: 26.101817},
+            //             {name: '陈弘中医内科诊所', lng: 118.944257, lat: 25.875471},
+            //             {name: '吴枫中医内科诊所', lng: 118.944257, lat: 25.875471},
+            //             {name: '姚亮中医内科诊所', lng: 119.289646, lat: 26.09295},
+            //             {name: '戴氏中医骨伤诊所', lng: 119.551828, lat: 26.492393},
+            //             {name: '周祯瑞口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '雅美口腔诊所', lng: 119.382509, lat: 25.905174},
+            //             {name: '陈枫口腔诊所', lng: 119.289773, lat: 26.092865},
+            //             {name: '何孝知口腔诊所', lng: 119.293679, lat: 26.090508},
+            //             {name: '王宝光口腔诊所', lng: 119.292198, lat: 26.092245},
+            //             {name: '王宝明口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '聂秋根智障儿童康复诊所', lng: 119.272939, lat: 26.083286},
+            //             {name: '陈观远康复诊所', lng: 119.298824, lat: 26.095195},
+            //             {name: '齐瑞玉妇科诊所', lng: 119.292085, lat: 26.092368},
+            //             {name: '大伟口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '显凤儿科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '京都老药工中医坐堂医诊所', lng: 119.313903, lat: 26.092381},
+            //             {name: '黄敏霞儿科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福建省福州第三中学卫生站', lng: 119.301973, lat: 26.097105},
+            //             {name: '福建省福州市第十八中学医务室', lng: 119.296825, lat: 26.093165},
+            //             {name: '鼓西街道社区卫生服务中心', lng: 119.300503, lat: 26.094365},
+            //             {name: '鼓西街道西湖社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '鼓西街道后县社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '鼓西街道梦山社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '慈爱综合门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同仁堂福州鼓楼福建药业连锁有限公司福州鼓楼东街口中医门诊部', lng: 119.307027, lat: 26.092473},
+            //             {name: '福州鼓楼瑞来春堂中医门诊部', lng: 119.303649, lat: 26.086595},
+            //             {name: '玖玖口腔门诊部', lng: 119.299301, lat: 26.089383},
+            //             {name: '鼓楼瑞来春堂澳门路中医门诊部', lng: 119.303649, lat: 26.086595},
+            //             {name: '福州盛莲医疗美容门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同春诊所', lng: 119.290545, lat: 26.082856},
+            //             {name: '河南社区诊所', lng: 119.292429, lat: 26.084099},
+            //             {name: '修明中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '福州市鼓楼区石兴凯美容信息咨询有限公司中医诊所', lng: 119.310492, lat: 26.088114},
+            //             {name: '福建人民艺术剧院医务室', lng: 119.29804, lat: 26.088328},
+            //             {name: '福建幼儿师范高等专科学校医务室', lng: 119.312999, lat: 26.036059},
+            //             {name: '福建省福州第二中学医务室', lng: 119.298699, lat: 26.085313},
+            //             {name: '福建省委党校医务室', lng: 119.292224, lat: 26.081616},
+            //             {name: '福建省福州杨桥中学医务室', lng: 119.292112, lat: 26.088065},
+            //             {name: '南街街道社区卫生服务中心', lng: 119.298014, lat: 26.087386},
+            //             {name: '南街街道杨桥河南社区卫生服务站', lng: 119.298014, lat: 26.087386},
+            //             {name: '南街街道柳河社区卫生服务站', lng: 119.298014, lat: 26.087386},
+            //             {name: '南街街道灵响社区卫生服务站', lng: 119.300242, lat: 26.084592},
+            //             {name: '南街街道驿里社区卫生服务站', lng: 119.298014, lat: 26.087386},
+            //             {name: '福州市萧治安中医外科医院', lng: 119.299412, lat: 26.102636},
+            //             {name: '福州口岸门诊部', lng: 119.181641, lat: 26.152646},
+            //             {name: '省疾控门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '仲仁康复中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '尚洁口腔门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '福州鼓楼伊美新世纪整形外科门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '袖里春堂中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '达拉斯医疗美容门诊部', lng: 119.312515, lat: 26.092265},
+            //             {name: '鼓楼仁禾医疗美容门诊部', lng: 119.314905, lat: 26.091279},
+            //             {name: '李小楠诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '陈文诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '李宝英口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '薛敏口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '悦己医疗美容诊所', lng: 119.63466, lat: 25.983486},
+            //             {name: '访东皮肤科诊所', lng: 119.306735, lat: 26.088964},
+            //             {name: '胡晓华美容外科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '林哲永中西医结合诊所', lng: 119.253964, lat: 26.060272},
+            //             {name: '李飞中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '林珊口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '福州市蓓蕾幼儿园卫生站', lng: 118.693385, lat: 26.098235},
+            //             {name: '福州教育学院附属第二小学卫生站', lng: 119.314439, lat: 26.087005},
+            //             {name: '福建省福州实验小学卫生站', lng: 119.310435, lat: 26.093271},
+            //             {name: '福建省农业科学院医务室', lng: 119.31356, lat: 26.109658},
+            //             {name: '福州第一中学医务室', lng: 119.30944, lat: 26.09357},
+            //             {name: '东街街道社区卫生服务中心', lng: 119.309856, lat: 26.089233},
+            //             {name: '东街街道大根社区卫生服务站', lng: 119.310679, lat: 26.091023},
+            //             {name: '登特口腔医院', lng: 119.311844, lat: 26.091917},
+            //             {name: '鼓楼协医堂中医门诊部', lng: 119.296382, lat: 26.078735},
+            //             {name: '福建晶特尔美可普鼓楼安泰口腔门诊部', lng: 119.296148, lat: 26.099024},
+            //             {name: '一脉阳光综合门诊部', lng: 119.544471, lat: 26.216746},
+            //             {name: '察微堂中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '韵琼内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '李志中医诊所', lng: 119.302042, lat: 26.083487},
+            //             {name: '黄劲松口腔诊所', lng: 119.306931, lat: 26.084577},
+            //             {name: '沈慈云口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '悦美诊所', lng: 119.311051, lat: 26.093727},
+            //             {name: '健和堂医药商店中医坐堂医诊所', lng: 119.313903, lat: 26.092381},
+            //             {name: '陈勉曾医疗美容诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '医诚健康管理有限公司中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '吕东中医诊所', lng: 119.307451, lat: 26.08309},
+            //             {name: '上官丽萍中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '福州市鼓楼区安泰街道社区养老服务照料中心医务室', lng: 119.309698, lat: 26.083498},
+            //             {name: '福建省福州延安中学卫生站', lng: 119.308455, lat: 26.085726},
+            //             {name: '福州市乌山小学卫生站', lng: 119.298385, lat: 26.08056},
+            //             {name: '福州香格里拉卫生站', lng: 99.707445, lat: 27.83576},
+            //             {name: '福州市儿童学园卫生站', lng: 119.298037, lat: 26.08181},
+            //             {name: '福州市格致中学卫生站', lng: 119.31348, lat: 26.085594},
+            //             {name: '安泰街道社区卫生服务中心', lng: 119.310228, lat: 26.078756},
+            //             {name: '福州东方医院', lng: 119.21032, lat: 26.074379},
+            //             {name: '福州泌尿专科医院', lng: 119.308707, lat: 26.098677},
+            //             {name: '尚医馆中医门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '同福医晓玲口腔门诊部', lng: 119.306456, lat: 26.098197},
+            //             {name: '福州鼓楼庆诚口腔门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州鼓楼长青口腔门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州鼓楼百纭凯曼医疗美容门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州鼓楼华仁医疗美容门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州美萨缔尔医疗美容门诊部', lng: 119.311137, lat: 26.096359},
+            //             {name: '美婕珑口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '郑世铭诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '贾同道美容皮肤科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '开元东诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '瑞祥诊所', lng: 119.275577, lat: 26.085588},
+            //             {name: '肖坤宁中医外科诊所诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '林炳英口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '陈爱珠口腔诊所', lng: 119.30757, lat: 26.094359},
+            //             {name: '薛杰口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '李晶晶口腔诊所', lng: 119.310387, lat: 26.095357},
+            //             {name: '郭榕口腔诊所', lng: 119.308974, lat: 26.100794},
+            //             {name: '林芳口腔诊所', lng: 119.298907, lat: 26.070759},
+            //             {name: '福州鼓楼晶丽口腔诊所', lng: 119.259387, lat: 26.094024},
+            //             {name: '魏珊美容皮肤科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '郑秀萍中医骨伤诊所', lng: 119.551828, lat: 26.492393},
+            //             {name: '林翰宇中医骨伤科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '林明春盲人医疗按摩所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福州市规划设计研究院医务室', lng: 119.22106, lat: 26.050626},
+            //             {name: '福州第十九中学卫生站', lng: 119.312177, lat: 26.095653},
+            //             {name: '福州屏东中学医务室', lng: 119.309226, lat: 26.105374},
+            //             {name: '中国人民银行福建省分行医务室', lng: 119.313581, lat: 26.10062},
+            //             {name: '鼓东街道社区卫生服务中心', lng: 119.309388, lat: 26.101448},
+            //             {name: '鼓东街道开元社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '鼓东街道观凤亭社区卫生服务站', lng: 119.291383, lat: 26.108272},
+            //             {name: '福州鼓楼康玺综合门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '盘屿骨科医院', lng: 119.303498, lat: 26.004666},
+            //             {name: '福州市按摩医院', lng: 119.32043, lat: 26.082815},
+            //             {name: '福州上工汇鼓楼综合门诊部', lng: 119.296148, lat: 26.099024},
+            //             {name: '福州鼓楼亚华口腔门诊部', lng: 119.310616, lat: 26.099492},
+            //             {name: '福州鼓楼爱美尔医疗美容门诊部', lng: 119.291784, lat: 26.091786},
+            //             {name: '鼓楼三栗鼠口腔门诊部', lng: 119.319627, lat: 26.084899},
+            //             {name: '福佳诊所', lng: 119.322559, lat: 26.083449},
+            //             {name: '和辉诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '郑金钗内科诊所', lng: 119.321757, lat: 26.081288},
+            //             {name: '天亮内科诊所', lng: 119.522603, lat: 25.711103},
+            //             {name: '李建国口腔诊所', lng: 119.32079, lat: 26.083637},
+            //             {name: '肖益春口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '闽江学院附中医务室', lng: 119.176895, lat: 26.072713},
+            //             {name: '水部街道社区卫生服务中心', lng: 119.323324, lat: 26.083098},
+            //             {name: '水部街道建华社区卫生服务站', lng: 119.323473, lat: 26.081432},
+            //             {name: '水部街道闽都社区卫生服务站', lng: 119.323473, lat: 26.081432},
+            //             {name: '水部街道福新社区卫生服务站', lng: 119.323473, lat: 26.081432},
+            //             {name: '水部街道莲宅社区卫生服务站', lng: 119.32661, lat: 26.080209},
+            //             {name: '杏桔堂中医门诊部', lng: 119.317177, lat: 26.081109},
+            //             {name: '鼓楼医院', lng: 119.316818, lat: 26.086386},
+            //             {name: '格莱美美容医院', lng: 119.315226, lat: 26.093284},
+            //             {name: '福建省医学科学研究院综合门诊部', lng: 119.314502, lat: 26.094746},
+            //             {name: '福州鼓楼爱康国宾门诊部', lng: 119.32233, lat: 26.095184},
+            //             {name: '福建省邮电管理局门诊部', lng: 119.30347, lat: 26.080429},
+            //             {name: '北京同仁堂东大中医门诊部', lng: 116.486633, lat: 40.004873},
+            //             {name: '西洪美可普口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '福州鼓楼晶特尔口腔门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州鼓楼晶美口腔门诊部', lng: 119.313041, lat: 26.105888},
+            //             {name: '爱微笑口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '同福医五四口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '福州斯麦尔口腔门诊部', lng: 119.387198, lat: 25.90041},
+            //             {name: '民康诊所', lng: 119.317355, lat: 26.108863},
+            //             {name: '清梧（庆福）诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '阳光诊所', lng: 119.523856, lat: 25.963445},
+            //             {name: '周斌口腔诊所', lng: 119.322313, lat: 26.086656},
+            //             {name: '李少川口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '林宝口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '林峥贻口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '青洋口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '马守治口腔诊所', lng: 119.385684, lat: 25.724412},
+            //             {name: '黄胜春口腔诊所', lng: 119.310366, lat: 26.095415},
+            //             {name: '岳山美容外科诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '毛信源盲人医疗按摩所', lng: 119.30347, lat: 26.080429},
+            //             {name: '朱坤健中医诊所', lng: 119.394448, lat: 25.725883},
+            //             {name: '金凌辉诊所', lng: 119.30347, lat: 26.080429},
+            //             {name: '福州教育学院附属第一小学卫生站', lng: 119.316954, lat: 26.090608},
+            //             {name: '中国人民财产保险公司福建省分司医务室', lng: 119.387278, lat: 25.924009},
+            //             {name: '中国人寿保险公司福建省分公司医务室', lng: 119.185702, lat: 25.991516},
+            //             {name: '福建省福州第十一中学医务室', lng: 119.317486, lat: 26.087962},
+            //             {name: '温泉街道社区卫生服务中心', lng: 119.3222, lat: 26.093384},
+            //             {name: '温泉街道汤边社区卫生服务站', lng: 119.315485, lat: 26.104998},
+            //             {name: '温泉街道金汤社区卫生服务站', lng: 119.315975, lat: 26.098522},
+            //             {name: '温泉街道琼河社区卫生服务站', lng: 119.318383, lat: 26.097252},
+            //             {name: '福州鼓楼曙光医疗美容门诊部', lng: 119.310492, lat: 26.088114},
+            //             {name: '福州美兆综合门诊部', lng: 119.30347, lat: 26.080429},
+            //         ]
+            //
+            //         orgPos.forEach(function (item) {
+            //             addMarker(new BMap.Point(item.lng, item.lat));
+            //         })
+            //
+            //         map.setMapStyleV2({
+            //             styleId: 'c95c52aa03be9fffc43616c08a364a59'
+            //         });
+            //     });
+            // },
+            //高德地图
+            initAMap: function () {
+                var _this = this
+
+                //初始化地图对象，加载地图
+                var map = new AMap.Map("map", {
+                    mapStyle: 'amap://styles/81b224a07b5e7ac102b8df3aeaa85aa3', //设置地图的显示样式
+                    // features: ['bg', 'road', 'building', 'point'],
+                    resizeEnable: true,
+                    center: [119.284107, 26.091348],//地图中心点，福州鼓楼区
+                    zoom: 14 //地图显示的缩放级别
+                });
+
+                var district = null;
+                var polygons = [];
+
+                var orgMarkData = [{
+                    "name": "福州伟达中医肿瘤医院",
+                    "lnglat": [119.294319, 26.102169],
+                    "address": "福飞南路67号",
+                    "formattedAddress": "福建省福州市台江区福飞南路|67号",
+                    "id": 0
+                }, {
+                    "name": "福建中医药大学国医堂门诊部",
+                    "lnglat": [119.30542, 26.10556],
+                    "address": "鼓楼区五四路282号",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|282",
+                    "id": 1
+                }, {
+                    "name": "福州鼓楼美贝尔医疗美容门诊部",
+                    "lnglat": [119.306464, 26.110659],
+                    "address": "五四路283号天华大厦1-3层",
+                    "formattedAddress": "福建省福州市鼓楼区天华大厦",
+                    "id": 2
+                }, {
+                    "name": "福州鼓楼华济堂中医门诊部",
+                    "lnglat": [119.29977, 26.106763],
+                    "address": "华屏路48号金冠花园2#3#楼",
+                    "formattedAddress": "福建省福州市鼓楼区金冠花园|-23号楼",
+                    "id": 3
+                }, {
+                    "name": "福州鼓楼博医汇中医门诊部",
+                    "lnglat": [119.3009, 26.10195],
+                    "address": "华林路116号屏东新城1号楼商场2-3层",
+                    "formattedAddress": "福建省福州市鼓楼区屏东新城",
+                    "id": 4
+                }, {
+                    "name": "福州晶特尔博医汇口腔门诊部",
+                    "lnglat": [119.3009, 26.10195],
+                    "address": "华林路116号屏东新城1号楼商场2层",
+                    "formattedAddress": "福建省福州市鼓楼区屏东新城",
+                    "id": 5
+                }, {
+                    "name": "福州鼓楼杏福龙腰中医门诊部",
+                    "lnglat": [119.293955, 26.104663],
+                    "address": "鼓楼区福飞路106号",
+                    "formattedAddress": "福建省福州市鼓楼区福飞路|106号",
+                    "id": 6
+                }, {
+                    "name": "西岸中医门诊部",
+                    "lnglat": [119.299263, 26.101288],
+                    "address": "华林路84号1-1#福建日报大厦附属楼4层",
+                    "formattedAddress": "福建省福州市鼓楼区福建日报大厦",
+                    "id": 7
+                }, {
+                    "name": "同步名康口腔门诊部",
+                    "lnglat": [119.300184, 26.104412],
+                    "address": "华林路北峰村龙峰新村15号店面",
+                    "formattedAddress": "福建省福州市鼓楼区龙峰新村",
+                    "id": 8
+                }, {
+                    "name": "鼓楼健福堂中医门诊部",
+                    "lnglat": [119.297934, 26.110323],
+                    "address": "华大街道福飞路143号金屏新苑3-5#楼连接体1层37店面、2层20店面",
+                    "formattedAddress": "福建省福州市鼓楼区金屏新苑|-35号",
+                    "id": 9
+                }, {
+                    "name": "为民诊所",
+                    "lnglat": [119.298979, 26.118311],
+                    "address": "福飞路213号榕信2区4号",
+                    "formattedAddress": "福建省福州市鼓楼区榕信2区|4号",
+                    "id": 10
+                }, {
+                    "name": "康园口腔诊所",
+                    "lnglat": [119.304878, 26.102397],
+                    "address": "华林路166号华林星座16层-819",
+                    "formattedAddress": "福建省福州市鼓楼区华林星座",
+                    "id": 11
+                }, {
+                    "name": "金冠口腔诊所",
+                    "lnglat": [119.299468, 26.105962],
+                    "address": "金冠花园17幢101室",
+                    "formattedAddress": "福建省福州市鼓楼区金冠花园|17座",
+                    "id": 12
+                }, {
+                    "name": "郑榕口腔诊所",
+                    "lnglat": [119.302321, 26.117975],
+                    "address": "琴亭路66号玉景台小区4号楼15号店",
+                    "formattedAddress": "福建省福州市晋安区琴亭路|66号",
+                    "id": 13
+                }, {
+                    "name": "泰安口腔诊所",
+                    "lnglat": [119.29824, 26.110428],
+                    "address": "福飞路143号金屏新苑21号",
+                    "formattedAddress": "福建省福州市鼓楼区金屏新苑",
+                    "id": 14
+                }, {
+                    "name": "元亨利贞口腔诊所",
+                    "lnglat": [119.296053, 26.092477],
+                    "address": "湖东路68号金湖廷1#楼1层08店面",
+                    "formattedAddress": "福建省福州市鼓楼区金湖廷|1号",
+                    "id": 15
+                }, {
+                    "name": "福州市瑞草灵方医药有限公司中医诊所",
+                    "lnglat": [119.305607, 26.102681],
+                    "address": "华大街道五四路260号二层204",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|260号",
+                    "id": 16
+                }, {
+                    "name": "福州鼓楼康凯诊所",
+                    "lnglat": [119.296923, 26.09553],
+                    "address": "鼓屏路126号",
+                    "formattedAddress": "福建省福州市鼓楼区鼓屏路|126",
+                    "id": 17
+                }, {
+                    "name": "邹继辉口腔诊所",
+                    "lnglat": [119.296863, 26.095862],
+                    "address": "华大街道鼓屏路136号-2号店面",
+                    "formattedAddress": "福建省福州市鼓楼区鼓屏路|136号",
+                    "id": 18
+                }, {
+                    "name": "林清中医骨伤科诊所",
+                    "lnglat": [119.303537, 26.111469],
+                    "address": "华大街道五四路310号省体育中心运动场馆D106",
+                    "formattedAddress": "福建省福州市鼓楼区省体育中心",
+                    "id": 19
+                }, {
+                    "name": "福州同福医恒博口腔门诊部",
+                    "lnglat": [119.298102, 26.108625],
+                    "address": "北环中路18号博纳广场四层南区1号楼四层",
+                    "formattedAddress": "福建省福州市鼓楼区南区",
+                    "id": 20
+                }, {
+                    "name": "屏山诊所",
+                    "lnglat": [119.300118, 26.105927],
+                    "address": "华屏路龙峰农贸市场综合连体楼27号店",
+                    "formattedAddress": "福建省福州市鼓楼区华屏路",
+                    "id": 21
+                }, {
+                    "name": "吴自开诊所",
+                    "lnglat": [119.307447, 26.112539],
+                    "address": "五四北路313号",
+                    "formattedAddress": "福建省福州市鼓楼区五四北路|313号",
+                    "id": 22
+                }, {
+                    "name": "华康诊所",
+                    "lnglat": [119.298264, 26.091403],
+                    "address": "古屏路145号",
+                    "formattedAddress": "福建省福州市鼓楼区古屏路",
+                    "id": 23
+                }, {
+                    "name": "北江诊所",
+                    "lnglat": [119.299724, 26.106431],
+                    "address": "鼓楼区华林路北江里",
+                    "formattedAddress": "福建省福州市鼓楼区北江里",
+                    "id": 24
+                }, {
+                    "name": "肖贤忠中医诊所",
+                    "lnglat": [119.29563, 26.087482],
+                    "address": "北大路新村7号楼2-4号店",
+                    "formattedAddress": "福建省福州市鼓楼区新村|7座",
+                    "id": 25
+                }, {
+                    "name": "刘彬口腔诊所",
+                    "lnglat": [119.307963, 26.112334],
+                    "address": "公益路13号米兰花苑1-2号连接体",
+                    "formattedAddress": "福建省福州市鼓楼区米兰花苑",
+                    "id": 26
+                }, {
+                    "name": "陈有耕口腔诊所",
+                    "lnglat": [119.292978, 26.09635],
+                    "address": "鼓楼区北大新村7座23-24店面",
+                    "formattedAddress": "福建省福州市鼓楼区北大新村|7号",
+                    "id": 27
+                }, {
+                    "name": "余成达口腔诊所",
+                    "lnglat": [119.293765, 26.093342],
+                    "address": "华大街道北大路华富花园4号楼南侧18号店面",
+                    "formattedAddress": "福建省福州市鼓楼区华富花园|4号楼",
+                    "id": 28
+                }, {
+                    "name": "琴湖诊所",
+                    "lnglat": [119.298979, 26.118311],
+                    "address": "福飞路213号榕信Ⅱ区4幢04店面",
+                    "formattedAddress": "福建省福州市鼓楼区榕信2区|4号",
+                    "id": 29
+                }, {
+                    "name": "福建省御仁投资有限公司中医诊所",
+                    "lnglat": [119.299273, 26.10925],
+                    "address": "华大街道北二环中路北侧，福飞南路东侧恒力博纳广场（南区）1#楼14层08办公",
+                    "formattedAddress": "福建省福州市鼓楼区恒力博纳广场南区",
+                    "id": 30
+                }, {
+                    "name": "福建省儿童保育院卫生站",
+                    "lnglat": [119.302355, 26.104508],
+                    "address": "鼓楼区环保路11号",
+                    "formattedAddress": "福建省福州市鼓楼区环保路|11号",
+                    "id": 31
+                }, {
+                    "name": "福建省电力勘测设计院医务室",
+                    "lnglat": [119.305511, 26.104612],
+                    "address": "五四路268号",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|268",
+                    "id": 32
+                }, {
+                    "name": "福建省公安厅医务室",
+                    "lnglat": [119.292756, 26.098388],
+                    "address": "华林路12号",
+                    "formattedAddress": "福建省福州市鼓楼区华林路|12号",
+                    "id": 33
+                }, {
+                    "name": "福建亿力电力物业公司医务室",
+                    "lnglat": [119.30582, 26.1035],
+                    "address": "鼓楼区五四路264号",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|264",
+                    "id": 34
+                }, {
+                    "name": "福建体育职业技术学院医务室",
+                    "lnglat": [119.303385, 26.111539],
+                    "address": "福飞路151号",
+                    "formattedAddress": "福建省福州市晋安区福飞路|151号",
+                    "id": 35
+                }, {
+                    "name": "福建省体育科学院研究所医务室",
+                    "lnglat": [119.303385, 26.111539],
+                    "address": "福飞路151号",
+                    "formattedAddress": "福建省福州市晋安区福飞路|151号",
+                    "id": 36
+                }, {
+                    "name": "福建省国家安全厅医务室",
+                    "lnglat": [119.30903, 26.12079],
+                    "address": "琴湖路52号",
+                    "formattedAddress": "福建省福州市鼓楼区琴湖路|52号",
+                    "id": 37
+                }, {
+                    "name": "福建省游泳运动管理中心医务室",
+                    "lnglat": [119.301247, 26.113238],
+                    "address": "福州市鼓楼区华大街道北浪路15号",
+                    "formattedAddress": "福建省福州市鼓楼区北浪路",
+                    "id": 38
+                }, {
+                    "name": "鼓楼区华大街道社区卫生服务中心",
+                    "lnglat": [119.293125, 26.096642],
+                    "address": "鼓楼区北大路36号",
+                    "formattedAddress": "福建省福州市鼓楼区北大路|36",
+                    "id": 39
+                }, {
+                    "name": "鼓楼区华大街道体育中心社区卫生服务站",
+                    "lnglat": [119.304112, 26.115648],
+                    "address": "鼓楼区琴湖路38号融侨2区14座6—7A店面",
+                    "formattedAddress": "福建省福州市鼓楼区融侨花园二区|14栋",
+                    "id": 40
+                }, {
+                    "name": "鼓楼区华大街道公益社区卫生服务站",
+                    "lnglat": [119.310989, 26.104595],
+                    "address": "鼓楼区华林路248号鸿裕温泉花园11号楼10号",
+                    "formattedAddress": "福建省福州市鼓楼区鸿裕温泉花园|11栋",
+                    "id": 41
+                }, {
+                    "name": "鼓楼区华大街道北江社区卫生服务站",
+                    "lnglat": [119.30139, 26.10702],
+                    "address": "鼓楼区华林路北江里99号",
+                    "formattedAddress": "福建省福州市鼓楼区北江里|99",
+                    "id": 42
+                }, {
+                    "name": "鼓楼区华大街道思儿亭社区卫生服务站",
+                    "lnglat": [119.307963, 26.112334],
+                    "address": "福州市鼓楼区公益路13号米兰花苑1号店面",
+                    "formattedAddress": "福建省福州市鼓楼区米兰花苑",
+                    "id": 43
+                }, {
+                    "name": "鼓楼区华大街道国棉社区卫生服务站",
+                    "lnglat": [119.297646, 26.108871],
+                    "address": "鼓楼区北环中路屏山苑2号楼一层",
+                    "formattedAddress": "福建省福州市鼓楼区屏山苑|2号楼",
+                    "id": 44
+                }, {
+                    "name": "鼓楼区华大街道琴湖社区卫生服务站",
+                    "lnglat": [119.303764, 26.11662],
+                    "address": "鼓楼区琴湖二路86号豪成花园4座楼下店面",
+                    "formattedAddress": "福建省福州市鼓楼区豪成花园|4号楼",
+                    "id": 45
+                }, {
+                    "name": "鼓楼区华大街道龙峰社区卫生服务站",
+                    "lnglat": [119.30032, 26.105619],
+                    "address": "鼓楼区华屏路金冠花园6楼12--13店面",
+                    "formattedAddress": "福建省福州市鼓楼区金冠花园|6号",
+                    "id": 46
+                }, {
+                    "name": "福建省实验幼儿园医务室",
+                    "lnglat": [119.292761, 26.093856],
+                    "address": "鼓楼区湖滨路139号",
+                    "formattedAddress": "福建省福州市鼓楼区湖滨路|139号",
+                    "id": 47
+                }, {
+                    "name": "福州鼓楼左海医院",
+                    "lnglat": [119.288351, 26.100362],
+                    "address": "鼓楼区铜盘路21号",
+                    "formattedAddress": "福建省福州市鼓楼区铜盘路|21",
+                    "id": 48
+                }, {
+                    "name": "福州鼓楼西美医疗美容门诊部",
+                    "lnglat": [119.29159, 26.099787],
+                    "address": "鼓楼区铜盘路2号",
+                    "formattedAddress": "福建省福州市鼓楼区铜盘路|2号",
+                    "id": 49
+                }, {
+                    "name": "米罗诊所",
+                    "lnglat": [119.296, 26.113374],
+                    "address": "米罗时代泉塘新城2号楼07、08号",
+                    "formattedAddress": "福建省福州市鼓楼区泉塘新城|2号楼",
+                    "id": 50
+                }, {
+                    "name": "李秀真诊所",
+                    "lnglat": [119.292575, 26.102952],
+                    "address": "龙腰路左海筑家B1店面",
+                    "formattedAddress": "福建省福州市鼓楼区左海筑家",
+                    "id": 51
+                }, {
+                    "name": "佳健诊所",
+                    "lnglat": [119.275313, 26.108043],
+                    "address": "铜盘路五凤兰庭6期14、15、16店",
+                    "formattedAddress": "福建省福州市鼓楼区兰庭6期",
+                    "id": 52
+                }, {
+                    "name": "陈志灼内科诊所",
+                    "lnglat": [119.292642, 26.116335],
+                    "address": "省直湖前小区48座",
+                    "formattedAddress": "福建省福州市鼓楼区省直湖前小区|48座",
+                    "id": 53
+                }, {
+                    "name": "仁玉综合诊所",
+                    "lnglat": [119.281293, 26.102689],
+                    "address": "铜盘路336号",
+                    "formattedAddress": "福建省福州市鼓楼区铜盘路|336",
+                    "id": 54
+                }, {
+                    "name": "甘益智内科诊所",
+                    "lnglat": [119.274707, 26.103268],
+                    "address": "鼓楼区五凤山庄内11-13号楼的连接体9号店面",
+                    "formattedAddress": "福建省福州市鼓楼区铜盘白龙之路五凤山庄",
+                    "id": 55
+                }, {
+                    "name": "康常诊所",
+                    "lnglat": [119.273544, 26.107113],
+                    "address": "丞相路50号",
+                    "formattedAddress": "福建省福州市鼓楼区丞相路|50",
+                    "id": 56
+                }, {
+                    "name": "红阳诊所",
+                    "lnglat": [119.282856, 26.091314],
+                    "address": "西环北路12号",
+                    "formattedAddress": "福建省福州市鼓楼区西环北路",
+                    "id": 57
+                }, {
+                    "name": "林琳口腔诊所",
+                    "lnglat": [119.29677, 26.113327],
+                    "address": "福州市鼓楼区湖前江厝路2号A店面",
+                    "formattedAddress": "福建省福州市鼓楼区江厝路|2号",
+                    "id": 58
+                }, {
+                    "name": "宋文口腔诊所",
+                    "lnglat": [119.290069, 26.106069],
+                    "address": "西二环158号金泉小区9号",
+                    "formattedAddress": "福建省福州市鼓楼区金泉小区|9座",
+                    "id": 59
+                }, {
+                    "name": "舒蕊口腔诊所",
+                    "lnglat": [119.289841, 26.10886],
+                    "address": "天泉路天元花园10号楼1号店",
+                    "formattedAddress": "福建省福州市鼓楼区天元花园|10号楼",
+                    "id": 60
+                }, {
+                    "name": "江华口腔诊所",
+                    "lnglat": [119.28448, 26.102351],
+                    "address": "五凤街道北环西路392号左海科技大厦A区1层16号店面",
+                    "formattedAddress": "福建省福州市鼓楼区左海科技大厦a区",
+                    "id": 61
+                }, {
+                    "name": "羽联口腔诊所",
+                    "lnglat": [119.273834, 26.106842],
+                    "address": "铜盘路五凤兰庭11-03-01店",
+                    "formattedAddress": "福建省福州市鼓楼区五凤兰庭|11座",
+                    "id": 62
+                }, {
+                    "name": "天元口腔诊所",
+                    "lnglat": [119.287776, 26.109067],
+                    "address": "鼓楼区天泉路133号4-5号店",
+                    "formattedAddress": "福建省福州市鼓楼区天泉路|133",
+                    "id": 63
+                }, {
+                    "name": "陈远口腔诊所",
+                    "lnglat": [119.272479, 26.106923],
+                    "address": "五凤街道兰庭24楼18、19店面",
+                    "formattedAddress": "福建省福州市鼓楼区兰庭",
+                    "id": 64
+                }, {
+                    "name": "张洪桥内科诊所",
+                    "lnglat": [119.29032, 26.10921],
+                    "address": "五凤街道天泉路38号天元花园11#楼1层01店面5-6",
+                    "formattedAddress": "福建省福州市鼓楼区天元花园|11座",
+                    "id": 65
+                }, {
+                    "name": "林孟重中医内科诊所",
+                    "lnglat": [119.287792, 26.105609],
+                    "address": "鼓楼区屏西路后营村32弄旁",
+                    "formattedAddress": "福建省福州市鼓楼区屏西路",
+                    "id": 66
+                }, {
+                    "name": "林建华中医内科诊所",
+                    "lnglat": [119.283322, 26.103313],
+                    "address": "鼓楼区五凤街道台后路20号-43号店面",
+                    "formattedAddress": "福建省福州市鼓楼区台后路|20号",
+                    "id": 67
+                }, {
+                    "name": "福建信息职业技术学院卫生站",
+                    "lnglat": [119.293955, 26.104663],
+                    "address": "鼓楼区福飞路106号",
+                    "formattedAddress": "福建省福州市鼓楼区福飞路|106号",
+                    "id": 68
+                }, {
+                    "name": "福建省福州铜盘中学卫生站",
+                    "lnglat": [119.27881, 26.102938],
+                    "address": "鼓楼区白龙路1号",
+                    "formattedAddress": "福建省福州市鼓楼区白龙路|1",
+                    "id": 69
+                }, {
+                    "name": "鼓楼区五凤街道兰庭社区卫生服务站",
+                    "lnglat": [119.27348, 26.106705],
+                    "address": "鼓楼区五凤兰庭九号楼",
+                    "formattedAddress": "福建省福州市鼓楼区桐盘路五凤兰庭|9座",
+                    "id": 70
+                }, {
+                    "name": "鼓楼区五凤街道梅峰社区卫生服务站",
+                    "lnglat": [119.27843, 26.100738],
+                    "address": "鼓楼区天骐路11号海景花园2号店面",
+                    "formattedAddress": "福建省福州市鼓楼区海景花园",
+                    "id": 71
+                }, {
+                    "name": "鼓楼区五凤街道广厦社区卫生服务站",
+                    "lnglat": [119.294666, 26.115275],
+                    "address": "福州市鼓楼区江厝路70号36栋底层",
+                    "formattedAddress": "福建省福州市鼓楼区江厝路|70号|36幢",
+                    "id": 72
+                }, {
+                    "name": "鼓楼区五凤街道天元社区卫生服务站",
+                    "lnglat": [119.297029, 26.110305],
+                    "address": "五凤街道福飞路236号泉塘新城13#至19#连接体一层09店面、二层05店面",
+                    "formattedAddress": "福建省福州市鼓楼区泉塘新城|13号楼",
+                    "id": 73
+                }, {
+                    "name": "鼓楼区五凤街道湖前社区卫生服务站",
+                    "lnglat": [119.294041, 26.114095],
+                    "address": "鼓楼区湖前小区17座23号（01—02—03）",
+                    "formattedAddress": "福建省福州市鼓楼区湖前小区|17座",
+                    "id": 74
+                }, {
+                    "name": "福州现代妇产医院",
+                    "lnglat": [119.295014, 26.108301],
+                    "address": "鼓楼区北环西路68号",
+                    "formattedAddress": "福建省福州市鼓楼区北环西路68号",
+                    "id": 75
+                }, {
+                    "name": "福州大学医院",
+                    "lnglat": [119.275421, 26.075232],
+                    "address": "鼓楼区工业路523号",
+                    "formattedAddress": "福建省福州市鼓楼区工业路|523号",
+                    "id": 76
+                }, {
+                    "name": "福州温泉口腔门诊部",
+                    "lnglat": [119.276813, 26.0656],
+                    "address": "凤湖新城",
+                    "formattedAddress": "福建省福州市鼓楼区凤湖新城",
+                    "id": 77
+                }, {
+                    "name": "福州鼓楼恩泽口腔门诊部",
+                    "lnglat": [119.271921, 26.067194],
+                    "address": "融侨锦江A2区1号楼02店",
+                    "formattedAddress": "福建省福州市鼓楼区融侨锦江a2区|1号楼",
+                    "id": 78
+                }, {
+                    "name": "鼓楼福能中医门诊部",
+                    "lnglat": [119.281056, 26.081581],
+                    "address": "杨桥中路232号5#楼二、三层",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥中路|232号",
+                    "id": 79
+                }, {
+                    "name": "福州三牧小学卫生站",
+                    "lnglat": [119.289864, 26.114503],
+                    "address": "鼓楼区江厝路16号",
+                    "formattedAddress": "福建省福州市鼓楼区江厝路|16号",
+                    "id": 80
+                }, {
+                    "name": "福建省射击运动中心医务室",
+                    "lnglat": [119.303822, 26.082294],
+                    "address": "鼓楼区北门江厝里15号",
+                    "formattedAddress": "福建省福州市鼓楼区",
+                    "id": 81
+                }, {
+                    "name": "福建省机关管理局屏西幼儿园医务室",
+                    "lnglat": [119.285725, 26.108584],
+                    "address": "铜盘路省直机关屏西住宅区",
+                    "formattedAddress": "福建省福州市鼓楼区省直机关屏西住宅区",
+                    "id": 82
+                }, {
+                    "name": "福建省国家税务局医务室",
+                    "lnglat": [119.287705, 26.10172],
+                    "address": "鼓楼区铜盘路32号",
+                    "formattedAddress": "福建省福州市鼓楼区铜盘路|32号",
+                    "id": 83
+                }, {
+                    "name": "福建工程学院软件人才培训基地医务室",
+                    "lnglat": [119.253495, 26.10345],
+                    "address": "鼓楼区铜盘路软件大道89号",
+                    "formattedAddress": "福建省福州市鼓楼区软件大道|89号",
+                    "id": 84
+                }, {
+                    "name": "福州市鼓楼区天年老年人护理中心医务室",
+                    "lnglat": [119.29303, 26.101892],
+                    "address": "泉塘新村二区A 座",
+                    "formattedAddress": "福建省福州市鼓楼区泉塘新村",
+                    "id": 85
+                }, {
+                    "name": "福州市鼓楼区五凤街道社区卫生服务中心",
+                    "lnglat": [119.27881, 26.102938],
+                    "address": "白龙路1号",
+                    "formattedAddress": "福建省福州市鼓楼区白龙路|1",
+                    "id": 86
+                }, {
+                    "name": "福州市鼓楼区五凤街道湖前社区卫生服务中心",
+                    "lnglat": [119.294864, 26.116586],
+                    "address": "湖景路28号凤谊大厦1-5层",
+                    "formattedAddress": "福建省福州市鼓楼区凤谊大厦",
+                    "id": 87
+                }, {
+                    "name": "鼓楼区五凤街道永恒社区卫生服务站",
+                    "lnglat": [119.289301, 26.105852],
+                    "address": "鼓楼区北环西路158号金泉小区崎下老人馆1楼",
+                    "formattedAddress": "福建省福州市鼓楼区金泉小区",
+                    "id": 88
+                }, {
+                    "name": "鼓楼区五凤街道丞相坊社区卫生服务站",
+                    "lnglat": [119.27267, 26.10834],
+                    "address": "丞相坊小区1-2#楼连接体1层店面",
+                    "formattedAddress": "福建省福州市鼓楼区丞相坊小区|12座",
+                    "id": 89
+                }, {
+                    "name": "北京同仁堂福建药业连锁有限公司鼓楼乌山西路中医门诊部",
+                    "lnglat": [119.28645, 26.072364],
+                    "address": "洪山镇乌山西路68号阳光乌山府院A1号楼1层06店面",
+                    "formattedAddress": "福建省福州市鼓楼区阳光乌山荣域|A|1",
+                    "id": 90
+                }, {
+                    "name": "福建省中医药研究院综合门诊部",
+                    "lnglat": [119.28263, 26.0704],
+                    "address": "鼓楼区乌山西路127号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山西路|127号",
+                    "id": 91
+                }, {
+                    "name": "鼓楼源盛堂中医门诊部",
+                    "lnglat": [119.263838, 26.075815],
+                    "address": "杨桥西路157号楼世纪家园1号楼",
+                    "formattedAddress": "福建省福州市鼓楼区世纪佳源|1号",
+                    "id": 92
+                }, {
+                    "name": "福州福港口腔门诊部",
+                    "lnglat": [119.287161, 26.072008],
+                    "address": "洪山镇乌山西路79号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山西路|79",
+                    "id": 93
+                }, {
+                    "name": "福州福臻综合门诊部",
+                    "lnglat": [119.278465, 26.079872],
+                    "address": "杨桥中路275号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥中路|275",
+                    "id": 94
+                }, {
+                    "name": "鼓楼菁华崇辉中医门诊部",
+                    "lnglat": [119.281861, 26.088637],
+                    "address": "福州市鼓楼区洪山镇西门华侨新村1号二层",
+                    "formattedAddress": "福建省福州市鼓楼区华侨新村|1号",
+                    "id": 95
+                }, {
+                    "name": "鼓楼千慕医疗美容门诊部",
+                    "lnglat": [119.28763, 26.071119],
+                    "address": "乌山西路黎明街15号1层",
+                    "formattedAddress": "福建省福州市鼓楼区黎明街|15号",
+                    "id": 96
+                }, {
+                    "name": "福建馨医堂康复医疗中心",
+                    "lnglat": [119.287708, 26.067885],
+                    "address": "福州市鼓楼区西二环中路475号富通中心2楼（整层）",
+                    "formattedAddress": "福建省福州市台江区西二环中路",
+                    "id": 97
+                }, {
+                    "name": "东昇诊所",
+                    "lnglat": [119.276381, 26.081517],
+                    "address": "西洪路凤凰池新村440号",
+                    "formattedAddress": "福建省福州市鼓楼区凤凰池新村|440号",
+                    "id": 98
+                }, {
+                    "name": "凤凰池诊所",
+                    "lnglat": [119.275656, 26.079662],
+                    "address": "杨桥中路286号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥中路|286号",
+                    "id": 99
+                }, {
+                    "name": "百武诊所",
+                    "lnglat": [119.281977, 26.075602],
+                    "address": "福屿后路45号",
+                    "formattedAddress": "福建省福州市鼓楼区福屿后路|45号",
+                    "id": 100
+                }, {
+                    "name": "复康诊所",
+                    "lnglat": [119.279255, 26.068327],
+                    "address": "工业路403号中茵花城1-09号店",
+                    "formattedAddress": "福建省福州市鼓楼区中茵花城|1号",
+                    "id": 101
+                }, {
+                    "name": "北鸿诊所",
+                    "lnglat": [119.279497, 26.066614],
+                    "address": "鼓楼区首凤路21号凤湖新城五区1层03号店面",
+                    "formattedAddress": "福建省福州市鼓楼区凤湖新城5区",
+                    "id": 102
+                }, {
+                    "name": "易康诊所",
+                    "lnglat": [119.282256, 26.077253],
+                    "address": "新园C区一层店面",
+                    "formattedAddress": "福建省福州市鼓楼区新园c区",
+                    "id": 103
+                }, {
+                    "name": "晨星诊所",
+                    "lnglat": [119.28766, 26.07157],
+                    "address": "洪山镇乌山西路68号阳光乌山府院A22#楼2层01商业房",
+                    "formattedAddress": "福建省福州市鼓楼区阳光乌山荣域|A",
+                    "id": 104
+                }, {
+                    "name": "俞彪内科诊所",
+                    "lnglat": [119.279279, 26.067207],
+                    "address": "首凤路中茵花城6号楼第5店面",
+                    "formattedAddress": "福建省福州市鼓楼区中茵花城|6号",
+                    "id": 105
+                }, {
+                    "name": "闽武内科诊所",
+                    "lnglat": [119.275545, 26.067668],
+                    "address": "洪山镇石湖桥小区2号楼店面",
+                    "formattedAddress": "福建省福州市鼓楼区桥小区|2号楼",
+                    "id": 106
+                }, {
+                    "name": "德语中医内科诊所",
+                    "lnglat": [119.274216, 26.094487],
+                    "address": "鼓楼区梅峰路63号鸿梅山庄5号楼10号门面",
+                    "formattedAddress": "福建省福州市鼓楼区鸿梅山庄|5座",
+                    "id": 107
+                }, {
+                    "name": "高扬喜内科诊所",
+                    "lnglat": [119.253323, 26.089339],
+                    "address": "大儒世家鼓楼庭院店面",
+                    "formattedAddress": "福建省福州市鼓楼区鼓楼庭院",
+                    "id": 108
+                }, {
+                    "name": "陈剑平内科诊所",
+                    "lnglat": [119.272474, 26.078114],
+                    "address": "杨桥西路47号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路|47号",
+                    "id": 109
+                }, {
+                    "name": "广湖内科诊所",
+                    "lnglat": [119.272108, 26.080469],
+                    "address": "西洪路西洪花园1层1#",
+                    "formattedAddress": "福建省福州市鼓楼区西洪花园",
+                    "id": 110
+                }, {
+                    "name": "沈朝阳内科诊所",
+                    "lnglat": [119.271259, 26.077796],
+                    "address": "杨桥西路85号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路|85号",
+                    "id": 111
+                }, {
+                    "name": "有为内科诊所",
+                    "lnglat": [119.255908, 26.082987],
+                    "address": "梁厝路国光小区2号楼1号店面",
+                    "formattedAddress": "福建省福州市鼓楼区国光小区|2号楼",
+                    "id": 112
+                }, {
+                    "name": "沈呈发内科诊所",
+                    "lnglat": [119.290909, 26.069513],
+                    "address": "斗池路10号",
+                    "formattedAddress": "福建省福州市鼓楼区斗池路|10号",
+                    "id": 113
+                }, {
+                    "name": "瑞林诊所",
+                    "lnglat": [119.26359, 26.07533],
+                    "address": "杨桥西路57号世纪家园11号楼31号店",
+                    "formattedAddress": "福建省福州市鼓楼区世纪家园",
+                    "id": 114
+                }, {
+                    "name": "来友内科诊所",
+                    "lnglat": [119.279529, 26.095081],
+                    "address": "鼓楼区西环北路68号梅海园11号楼31号店",
+                    "formattedAddress": "福建省福州市鼓楼区梅海园|11栋",
+                    "id": 115
+                }, {
+                    "name": "陈丽强内科诊所",
+                    "lnglat": [119.272108, 26.080469],
+                    "address": "鼓楼区西洪路文村支路西洪花园15号店",
+                    "formattedAddress": "福建省福州市鼓楼区西洪花园",
+                    "id": 117
+                }, {
+                    "name": "赵文中医诊所",
+                    "lnglat": [119.294343, 26.107953],
+                    "address": "西二环路252号",
+                    "formattedAddress": "福建省福州市鼓楼区西二环路",
+                    "id": 118
+                }, {
+                    "name": "黄典凯中医诊所",
+                    "lnglat": [119.273337, 26.078844],
+                    "address": "杨桥西路6号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路|6号",
+                    "id": 119
+                }, {
+                    "name": "林世辉口腔诊所",
+                    "lnglat": [119.273663, 26.078984],
+                    "address": "杨桥西路6号隆凤新村1号楼3号店",
+                    "formattedAddress": "福建省福州市鼓楼区隆凤新村|1号楼",
+                    "id": 120
+                }, {
+                    "name": "明宇医疗美容诊所",
+                    "lnglat": [119.276853, 26.067192],
+                    "address": "鼓楼区双下路28号凤湖新村三坊七巷安置1栋、3栋、4栋01店面",
+                    "formattedAddress": "福建省福州市鼓楼区双下路",
+                    "id": 121
+                }, {
+                    "name": "陈瑛口腔诊所",
+                    "lnglat": [119.255381, 26.08877],
+                    "address": "洪山镇原厝路36号号仁文大儒世家4#楼1层05店面",
+                    "formattedAddress": "福建省福州市鼓楼区大儒世家|4栋",
+                    "id": 122
+                }, {
+                    "name": "吴翊乐儿科诊所",
+                    "lnglat": [119.267264, 26.069905],
+                    "address": "洪山镇西江滨大道66号融侨锦江D区4#楼1层04店面",
+                    "formattedAddress": "福建省福州市鼓楼区融侨锦江d区|4号",
+                    "id": 123
+                }, {
+                    "name": "晨光诊所",
+                    "lnglat": [119.264411, 26.076518],
+                    "address": "鼓楼区杨桥西路晨光街",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路",
+                    "id": 124
+                }, {
+                    "name": "俞友利内科诊所",
+                    "lnglat": [119.253323, 26.089339],
+                    "address": "鼓楼区原厝路鼓楼庭院127号09店面",
+                    "formattedAddress": "福建省福州市鼓楼区鼓楼庭院",
+                    "id": 125
+                }, {
+                    "name": "先锦美容皮肤科诊所",
+                    "lnglat": [119.276837, 26.074804],
+                    "address": "鼓楼区洪山镇福三路20号华润万象城一期S5#楼2层50号商铺",
+                    "formattedAddress": "福建省福州市鼓楼区华润万象城一期",
+                    "id": 126
+                }, {
+                    "name": "林杰中医内科诊所",
+                    "lnglat": [119.268978, 26.07977],
+                    "address": "鼓楼区西洪路518号福津名茶文化城C区三楼301",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|518号",
+                    "id": 127
+                }, {
+                    "name": "葛兰兰口腔诊所",
+                    "lnglat": [119.28153, 26.09457],
+                    "address": "鼓楼区洪山镇西二环北路80号山海关花园（山海关小区）A#楼03店面",
+                    "formattedAddress": "福建省福州市鼓楼区山海观小区|A号楼",
+                    "id": 128
+                }, {
+                    "name": "李明中医诊所",
+                    "lnglat": [119.255031, 26.085034],
+                    "address": "洪山镇国光路40号店面",
+                    "formattedAddress": "福建省福州市鼓楼区国光路",
+                    "id": 129
+                }, {
+                    "name": "林清玲中医诊所",
+                    "lnglat": [119.282167, 26.07085],
+                    "address": "洪山镇乌山西路126号好都市家园1#楼1层05店面",
+                    "formattedAddress": "福建省福州市鼓楼区好都市家园|1号楼",
+                    "id": 130
+                }, {
+                    "name": "省佛教中草药肿瘤诊所",
+                    "lnglat": [119.258071, 26.075544],
+                    "address": "杨桥西路225号洪桥新村1#2#楼连接体1层11-19店面",
+                    "formattedAddress": "福建省福州市鼓楼区洪桥新村",
+                    "id": 131
+                }, {
+                    "name": "健生中西医结合诊所",
+                    "lnglat": [119.251996, 26.087883],
+                    "address": "洪山镇原厝路62号仁文大儒世家16＃1层10号店面",
+                    "formattedAddress": "福建省福州市鼓楼区大儒世家|16栋",
+                    "id": 132
+                }, {
+                    "name": "张斌口腔诊所",
+                    "lnglat": [119.276102, 26.094669],
+                    "address": "梅峰路马坑村1#lou 8号店面",
+                    "formattedAddress": "福建省福州市鼓楼区马坑村|1号楼",
+                    "id": 133
+                }, {
+                    "name": "潘怀琴口腔诊所",
+                    "lnglat": [119.278284, 26.082688],
+                    "address": "西洪新村24座5号店",
+                    "formattedAddress": "福建省福州市鼓楼区西洪新村|24号",
+                    "id": 134
+                }, {
+                    "name": "任娟口腔诊所",
+                    "lnglat": [119.273547, 26.095609],
+                    "address": "福州市梅峰路7号",
+                    "formattedAddress": "福建省福州市仓山区梅峰路|7号",
+                    "id": 135
+                }, {
+                    "name": "炳霖口腔诊所",
+                    "lnglat": [119.283344, 26.071383],
+                    "address": "乌山西路126号美景良城2号12店面",
+                    "formattedAddress": "福建省福州市鼓楼区美景良城|2栋",
+                    "id": 136
+                }, {
+                    "name": "文培口腔诊所",
+                    "lnglat": [119.282751, 26.07734],
+                    "address": "西二环路福屿路252号",
+                    "formattedAddress": "福建省福州市鼓楼区福屿路|252号",
+                    "id": 137
+                }, {
+                    "name": "西郊口腔诊所",
+                    "lnglat": [119.280164, 26.083674],
+                    "address": "西洪路大王里85号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路/大王里",
+                    "id": 138
+                }, {
+                    "name": "黄怀贞口腔诊所",
+                    "lnglat": [119.253169, 26.087983],
+                    "address": "洪山镇原厝路136号华事达花园1座09店面",
+                    "formattedAddress": "福建省福州市鼓楼区华事达花园|1座",
+                    "id": 139
+                }, {
+                    "name": "何兴潭口腔诊所",
+                    "lnglat": [119.287161, 26.072008],
+                    "address": "洪山镇乌山西路79号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山西路|79",
+                    "id": 140
+                }, {
+                    "name": "黄子安口腔诊所",
+                    "lnglat": [119.260478, 26.090491],
+                    "address": "洪山镇梅亭路26号仁文大儒世家15号楼1层09店面",
+                    "formattedAddress": "福建省福州市鼓楼区大儒世家|15号楼",
+                    "id": 141
+                }, {
+                    "name": "福州市儿童福利院医务室",
+                    "lnglat": [119.272005, 26.0788],
+                    "address": "鼓楼区杨桥西路28号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路|28号",
+                    "id": 142
+                }, {
+                    "name": "中科院福建物质结构研究所卫生站",
+                    "lnglat": [119.265327, 26.075295],
+                    "address": "杨桥西路155号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥西路|155",
+                    "id": 143
+                }, {
+                    "name": "福州市聋哑学校卫生站",
+                    "lnglat": [119.274791, 26.0831],
+                    "address": "西洪路坊下15号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路坊",
+                    "id": 144
+                }, {
+                    "name": "福建工贸学校卫生站",
+                    "lnglat": [119.248424, 26.091364],
+                    "address": "洪山原厝23号",
+                    "formattedAddress": "福建省福州市鼓楼区原厝|23",
+                    "id": 145
+                }, {
+                    "name": "闽江职业大学医务室",
+                    "lnglat": [119.28044, 26.066217],
+                    "address": "鼓楼区工业路333号",
+                    "formattedAddress": "福建省福州市鼓楼区工业路|333号",
+                    "id": 146
+                }, {
+                    "name": "鼓楼区洪山镇金牛山社区家园医务室",
+                    "lnglat": [119.2636, 26.078842],
+                    "address": "西洪路528号（浙商金顶园区内1、2号楼）",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|528号",
+                    "id": 147
+                }, {
+                    "name": "福建师范大学文博附属中学卫生站",
+                    "lnglat": [119.255492, 26.083333],
+                    "address": "洪中镇梁厝路171号",
+                    "formattedAddress": "福建省福州市鼓楼区梁厝路|171号",
+                    "id": 148
+                }, {
+                    "name": "福建省福州教育学院附属中学医务室",
+                    "lnglat": [119.284143, 26.070345],
+                    "address": "鼓楼区乌山西路123号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山西路|123",
+                    "id": 149
+                }, {
+                    "name": "福州市公安局精神病收容管理所医务室",
+                    "lnglat": [119.255293, 26.076448],
+                    "address": "扬桥西路197号",
+                    "formattedAddress": "福建省福州市鼓楼区扬桥西路",
+                    "id": 150
+                }, {
+                    "name": "福建省福州二十二中学医务室",
+                    "lnglat": [119.303822, 26.082294],
+                    "address": "鼓楼区西门外坊下21号",
+                    "formattedAddress": "福建省福州市鼓楼区",
+                    "id": 151
+                }, {
+                    "name": "福州市鼓楼区金太阳老年公寓医务室",
+                    "lnglat": [119.273301, 26.087141],
+                    "address": "鼓楼区后县路99号",
+                    "formattedAddress": "福建省福州市鼓楼区后县路|99号",
+                    "id": 152
+                }, {
+                    "name": "福建经济学校医务室",
+                    "lnglat": [119.26197, 26.089561],
+                    "address": "福州鼓楼梅亭路17号",
+                    "formattedAddress": "福建省福州市鼓楼区梅亭路|17号",
+                    "id": 153
+                }, {
+                    "name": "福州市鼓楼区五福缘老人养护中心医务室",
+                    "lnglat": [119.263005, 26.0785],
+                    "address": "福州市鼓楼区西洪路528号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|528号",
+                    "id": 154
+                }, {
+                    "name": "鼓楼区洪山镇社区卫生服务中心",
+                    "lnglat": [119.281526, 26.073601],
+                    "address": "洪山镇福屿福三路42号福尚名居公寓4号楼",
+                    "formattedAddress": "福建省福州市鼓楼区福尚名居公寓|4",
+                    "id": 155
+                }, {
+                    "name": "鼓楼区洪山镇金牛山社区卫生服务站",
+                    "lnglat": [119.263713, 26.078136],
+                    "address": "西洪路561号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|561号",
+                    "id": 156
+                }, {
+                    "name": "鼓楼区洪山镇兴园社区卫生服务站",
+                    "lnglat": [119.289756, 26.068664],
+                    "address": "鼓楼区黎明村兴园路梦之园2—3号店面",
+                    "formattedAddress": "福建省福州市鼓楼区梦之园|2号楼",
+                    "id": 157
+                }, {
+                    "name": "鼓楼区洪山镇福屿社区卫生服务站",
+                    "lnglat": [119.28208, 26.07981],
+                    "address": "鼓楼区洪山园路福屿3区32座底层2-4店面",
+                    "formattedAddress": "福建省福州市鼓楼区福屿3区",
+                    "id": 158
+                }, {
+                    "name": "鼓楼区洪山镇象山社区卫生服务站",
+                    "lnglat": [119.276262, 26.094502],
+                    "address": "福州市鼓楼区梅峰路马坑新村1号楼2号店面",
+                    "formattedAddress": "福建省福州市鼓楼区马坑新村|1号楼",
+                    "id": 159
+                }, {
+                    "name": "鼓楼区洪山镇锦江社区卫生服务站",
+                    "lnglat": [119.270952, 26.067568],
+                    "address": "福州市江滨大道66号融侨锦江B2区二楼B07店",
+                    "formattedAddress": "福建省福州市闽侯县滨大道|66号",
+                    "id": 160
+                }, {
+                    "name": "福州市鼓楼区洪山镇洪山桥社区卫生服务站",
+                    "lnglat": [119.256248, 26.077255],
+                    "address": "杨桥西路222号金牛花园1号楼7-8号店面",
+                    "formattedAddress": "福建省福州市鼓楼区金牛花园|1座",
+                    "id": 161
+                }, {
+                    "name": "鼓楼区洪山镇国光社区卫生服务站",
+                    "lnglat": [119.257119, 26.085922],
+                    "address": "鼓楼区大儒世家雅乐街44-45号店面",
+                    "formattedAddress": "福建省福州市鼓楼区大儒世家",
+                    "id": 162
+                }, {
+                    "name": "鼓楼区洪山镇凤湖社区卫生服务站",
+                    "lnglat": [119.275815, 26.065223],
+                    "address": "洪山镇双下路37号凤湖新城1区2号楼二层",
+                    "formattedAddress": "福建省福州市鼓楼区凤湖新城1区|2号楼",
+                    "id": 163
+                }, {
+                    "name": "李杰口腔诊所",
+                    "lnglat": [119.289875, 26.073667],
+                    "address": "文华体育用品批发市场小柳路3号",
+                    "formattedAddress": "福建省福州市鼓楼区小柳路|3号",
+                    "id": 164
+                }, {
+                    "name": "苏杭中医外科诊所",
+                    "lnglat": [119.289756, 26.074617],
+                    "address": "鼓楼区小柳66号",
+                    "formattedAddress": "福建省福州市鼓楼区小柳",
+                    "id": 165
+                }, {
+                    "name": "邓志国中西医结合诊所",
+                    "lnglat": [119.287574, 26.07787],
+                    "address": "柳河路10-12号",
+                    "formattedAddress": "福建省福州市鼓楼区柳河路",
+                    "id": 166
+                }, {
+                    "name": "福州同道口腔医院",
+                    "lnglat": [119.281579, 26.075484],
+                    "address": "福屿后路40号福屿三区20#-22#连体一层、二层店面",
+                    "formattedAddress": "福建省福州市鼓楼区福屿三区|20号楼",
+                    "id": 167
+                }, {
+                    "name": "福建三博福能脑科医院",
+                    "lnglat": [119.274503, 26.086702],
+                    "address": "后县路18号",
+                    "formattedAddress": "福建省福州市鼓楼区后县路|18号",
+                    "id": 168
+                }, {
+                    "name": "福建省福能集团总医院",
+                    "lnglat": [119.274503, 26.086702],
+                    "address": "后县路18号",
+                    "formattedAddress": "福建省福州市鼓楼区后县路|18号",
+                    "id": 169
+                }, {
+                    "name": "福州金域医学检验所",
+                    "lnglat": [119.256827, 26.104135],
+                    "address": "福州鼓楼区软件园C区58号",
+                    "formattedAddress": "福建省福州市鼓楼区软件园C区|58号",
+                    "id": 170
+                }, {
+                    "name": "福建省医学会西红综合门诊部",
+                    "lnglat": [119.284617, 26.085642],
+                    "address": "鼓楼区西洪路178号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|178",
+                    "id": 171
+                }, {
+                    "name": "铭医(固生)堂综合门诊部",
+                    "lnglat": [119.292762, 26.090662],
+                    "address": "鼓楼区鼓西街道湖滨路西湖新庄B1楼１层主楼１层",
+                    "formattedAddress": "福建省福州市鼓楼区西湖新庄",
+                    "id": 172
+                }, {
+                    "name": "福州鼓楼博方堂中医门诊部",
+                    "lnglat": [119.289161, 26.087459],
+                    "address": "鼓西路396号西湖好美家小区4#二层",
+                    "formattedAddress": "福建省福州市鼓楼区西湖好美家小区",
+                    "id": 173
+                }, {
+                    "name": "福州鼓楼新永同惠中医门诊部",
+                    "lnglat": [119.283453, 26.08998],
+                    "address": "西环北路湖滨新城一层店面",
+                    "formattedAddress": "福建省福州市鼓楼区湖滨新城",
+                    "id": 174
+                }, {
+                    "name": "鼓楼同和堂中医门诊部",
+                    "lnglat": [119.285711, 26.091433],
+                    "address": "湖头街支巷50号湖滨新城11、12、14#楼连接体2层07店面",
+                    "formattedAddress": "福建省福州市鼓楼区湖滨新城|11",
+                    "id": 175
+                }, {
+                    "name": "鼓楼全育中医门诊部",
+                    "lnglat": [119.283855, 26.089507],
+                    "address": "鼓西街道湖头街109号西湖广宇花园1#楼2层办公",
+                    "formattedAddress": "福建省福州市鼓楼区西湖广宇花园",
+                    "id": 176
+                }, {
+                    "name": "福州鼓楼同福医西湖口腔门诊部",
+                    "lnglat": [119.289161, 26.087459],
+                    "address": "鼓西路396号西湖好美家",
+                    "formattedAddress": "福建省福州市鼓楼区西湖好美家",
+                    "id": 177
+                }, {
+                    "name": "康之美口腔门诊部",
+                    "lnglat": [119.291833, 26.086701],
+                    "address": "通湖路129号航龙花园6#-7#楼连体22号店",
+                    "formattedAddress": "福建省福州市鼓楼区航龙花园|67",
+                    "id": 178
+                }, {
+                    "name": "福州科尔口腔门诊部",
+                    "lnglat": [119.296899, 26.085998],
+                    "address": "杨桥东路24号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥东路|24",
+                    "id": 179
+                }, {
+                    "name": "鼓楼区鼓西街道西湖社区卫生服务站",
+                    "lnglat": [119.291258, 26.088684],
+                    "address": "福州市通湖路通湖新村4号楼一层店面03号",
+                    "formattedAddress": "福建省福州市鼓楼区通湖新村|4座",
+                    "id": 180
+                }, {
+                    "name": "鼓楼区鼓西街道后县社区卫生服务站",
+                    "lnglat": [119.285208, 26.091717],
+                    "address": "鼓楼区湖头街86号双安城1号楼26号",
+                    "formattedAddress": "福建省福州市鼓楼区双安城|1号楼",
+                    "id": 181
+                }, {
+                    "name": "鼓楼区鼓西街道梦山社区卫生服务站",
+                    "lnglat": [119.282328, 26.08804],
+                    "address": "鼓楼区西环北路139号2-3楼底层店面",
+                    "formattedAddress": "福建省福州市鼓楼区西环北路",
+                    "id": 182
+                }, {
+                    "name": "福州鼓楼慈爱综合门诊部",
+                    "lnglat": [119.288253, 26.0836],
+                    "address": "杨桥中路1号名湖豪门1层11号店",
+                    "formattedAddress": "福建省福州市鼓楼区名湖豪门",
+                    "id": 183
+                }, {
+                    "name": "同仁堂福州鼓楼福建药业连锁有限公司福州鼓楼东街口中医门诊部",
+                    "lnglat": [119.297919, 26.0854],
+                    "address": "杨桥路5号宏建大厦B#楼综合一层1号 店面",
+                    "formattedAddress": "福建省福州市鼓楼区宏建大厦|B座",
+                    "id": 184
+                }, {
+                    "name": "福州鼓楼瑞来春堂中医门诊部",
+                    "lnglat": [119.297253, 26.080217],
+                    "address": "鼓楼区南后街4.6号店面二层",
+                    "formattedAddress": "福建省福州市鼓楼区南后街|4号",
+                    "id": 185
+                }, {
+                    "name": "福州玖玖口腔门诊部",
+                    "lnglat": [119.292894, 26.083005],
+                    "address": "福州市鼓楼区通湖路226号",
+                    "formattedAddress": "福建省福州市鼓楼区通湖路|226",
+                    "id": 186
+                }, {
+                    "name": "鼓楼瑞来春堂澳门路中医门诊部",
+                    "lnglat": [119.29749, 26.07927],
+                    "address": "澳门路26号及二层商铺",
+                    "formattedAddress": "福建省福州市鼓楼区澳门路|26号",
+                    "id": 187
+                }, {
+                    "name": "福州盛莲医疗美容门诊部",
+                    "lnglat": [119.294534, 26.084216],
+                    "address": "福州市鼓楼区南街街道杨桥东路19号三坊七巷一期工程2-3号楼综合一层二层商场",
+                    "formattedAddress": "福建省福州市鼓楼区工程",
+                    "id": 188
+                }, {
+                    "name": "同春诊所",
+                    "lnglat": [119.283875, 26.076321],
+                    "address": "西二环小柳新村B25座102",
+                    "formattedAddress": "福建省福州市鼓楼区小柳新村|B|25座",
+                    "id": 189
+                }, {
+                    "name": "陈弘中医内科诊所",
+                    "lnglat": [119.293656, 26.089468],
+                    "address": "卧湖路26号",
+                    "formattedAddress": "福建省福州市鼓楼区卧湖路|26",
+                    "id": 190
+                }, {
+                    "name": "吴枫中医内科诊所",
+                    "lnglat": [119.28552, 26.08511],
+                    "address": "西洪路155号西洪小区1-2楼33号店",
+                    "formattedAddress": "福建省福州市鼓楼区西洪小区",
+                    "id": 191
+                }, {
+                    "name": "姚亮中医内科诊所",
+                    "lnglat": [119.283211, 26.086594],
+                    "address": "鼓楼区光荣路67号",
+                    "formattedAddress": "福建省福州市鼓楼区光荣路|67",
+                    "id": 192
+                }, {
+                    "name": "戴氏中医骨伤诊所",
+                    "lnglat": [119.293361, 26.090256],
+                    "address": "卧湖路54号",
+                    "formattedAddress": "福建省福州市鼓楼区卧湖路|54",
+                    "id": 193
+                }, {
+                    "name": "周祯瑞口腔诊所",
+                    "lnglat": [119.292141, 26.088568],
+                    "address": "鼓西路286号西峰新村综合商店1层286＃店面",
+                    "formattedAddress": "福建省福州市鼓楼区鼓西路|286",
+                    "id": 194
+                }, {
+                    "name": "雅美口腔诊所",
+                    "lnglat": [119.283043, 26.085217],
+                    "address": "西洪路金达二区一号楼10号店",
+                    "formattedAddress": "福建省福州市鼓楼区金达二区|1号",
+                    "id": 195
+                }, {
+                    "name": "陈枫口腔诊所",
+                    "lnglat": [119.283228, 26.086573],
+                    "address": "光荣路65号",
+                    "formattedAddress": "福建省福州市鼓楼区光荣路|65",
+                    "id": 196
+                }, {
+                    "name": "何孝知口腔诊所",
+                    "lnglat": [119.287188, 26.0842],
+                    "address": "杨桥中路56号雅颂佳园1号楼5号店",
+                    "formattedAddress": "福建省福州市鼓楼区雅颂佳园|1号楼",
+                    "id": 197
+                }, {
+                    "name": "王宝光口腔诊所",
+                    "lnglat": [119.285928, 26.085888],
+                    "address": "西洪路116号湖畔小区3号楼",
+                    "formattedAddress": "福建省福州市鼓楼区湖畔小区|3座",
+                    "id": 198
+                }, {
+                    "name": "王宝明口腔诊所",
+                    "lnglat": [119.287028, 26.08571],
+                    "address": "西洪路银湖花园4号5-6店",
+                    "formattedAddress": "福建省福州市鼓楼区银湖花园|4座",
+                    "id": 199
+                }, {
+                    "name": "福州鼓楼名韩医疗美容门诊部",
+                    "lnglat": [119.290156, 26.089264],
+                    "address": "鼓楼区湖滨路66号",
+                    "formattedAddress": "福建省福州市鼓楼区湖滨路|66",
+                    "id": 200
+                }, {
+                    "name": "爱尔丽（福州）医学美容门诊部",
+                    "lnglat": [119.297216, 26.08715],
+                    "address": "鼓楼区省府路30号",
+                    "formattedAddress": "福建省福州市鼓楼区省府路|30",
+                    "id": 201
+                }, {
+                    "name": "福州鼓楼毛博医疗美容门诊部",
+                    "lnglat": [119.297142, 26.089384],
+                    "address": "鼓楼区鼓西路2号66号店面",
+                    "formattedAddress": "福建省福州市鼓楼区鼓西路|2号",
+                    "id": 202
+                }, {
+                    "name": "福州玛恩医疗美容门诊部",
+                    "lnglat": [119.282886, 26.083748],
+                    "address": "鼓楼区杨桥巷10号陆庄庭苑",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥巷10号陆庄庭苑",
+                    "id": 203
+                }, {
+                    "name": "鼓楼好安心中医门诊部",
+                    "lnglat": [119.282328, 26.08804],
+                    "address": "鼓西街道西环北路429号",
+                    "formattedAddress": "福建省福州市闽侯县安置房",
+                    "id": 204
+                }, {
+                    "name": "福州鼓楼元吉综合门诊部",
+                    "lnglat": [119.285711, 26.091433],
+                    "address": "鼓楼区鼓西街道湖头街支巷50号湖滨新城11、12、14#楼连接体一层13、二层13店面",
+                    "formattedAddress": "福建省福州市鼓楼区湖滨新城|11",
+                    "id": 205
+                }, {
+                    "name": "达明诊所",
+                    "lnglat": [119.295528, 26.088069],
+                    "address": "达明路138号",
+                    "formattedAddress": "福建省福州市鼓楼区达明路|138",
+                    "id": 206
+                }, {
+                    "name": "世英内科诊所",
+                    "lnglat": [119.295339, 26.0882],
+                    "address": "鼓楼区达明新村10座101号",
+                    "formattedAddress": "福建省福州市鼓楼区达明新村|10座",
+                    "id": 207
+                }, {
+                    "name": "朱传霞中医内科诊所",
+                    "lnglat": [119.274444, 26.08051],
+                    "address": "西门西洪路99号店",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路",
+                    "id": 208
+                }, {
+                    "name": "金福康口腔诊所",
+                    "lnglat": [119.29185, 26.085475],
+                    "address": "鼓西街道通湖路178号杨桥大厦2号楼1层",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥大厦|2号楼",
+                    "id": 209
+                }, {
+                    "name": "聂秋根智障儿童康复诊所",
+                    "lnglat": [119.282602, 26.090091],
+                    "address": "西二环路象山公寓5号",
+                    "formattedAddress": "福建省福州市鼓楼区象山公寓|5栋",
+                    "id": 210
+                }, {
+                    "name": "陈观远康复诊所",
+                    "lnglat": [119.292958, 26.089292],
+                    "address": "鼓楼区西峰里新村1幢98号店",
+                    "formattedAddress": "福建省福州市鼓楼区新村|1号",
+                    "id": 211
+                }, {
+                    "name": "齐瑞玉妇科诊所",
+                    "lnglat": [119.285928, 26.085888],
+                    "address": "鼓西街道西洪路116号湖畔小区3#1层01店面",
+                    "formattedAddress": "福建省福州市鼓楼区湖畔小区|3座",
+                    "id": 212
+                }, {
+                    "name": "大伟口腔诊所",
+                    "lnglat": [119.28315, 26.085308],
+                    "address": "西洪路218号",
+                    "formattedAddress": "福建省福州市鼓楼区西洪路|218",
+                    "id": 213
+                }, {
+                    "name": "显凤儿科诊所",
+                    "lnglat": [119.293316, 26.089065],
+                    "address": "鼓西街道鼓西路216号卧湖新苑座8号店面",
+                    "formattedAddress": "福建省福州市鼓楼区卧湖新苑",
+                    "id": 214
+                }, {
+                    "name": "福州京都老药工医药商店中医坐堂医诊所",
+                    "lnglat": [119.289158, 26.08665],
+                    "address": "白马北路27号",
+                    "formattedAddress": "福建省福州市鼓楼区白马北路|27",
+                    "id": 215
+                }, {
+                    "name": "黄敏霞儿科诊所",
+                    "lnglat": [119.283855, 26.089507],
+                    "address": "鼓西街道湖头街109号西湖广宇花园1#楼2层办公",
+                    "formattedAddress": "福建省福州市鼓楼区西湖广宇花园",
+                    "id": 216
+                }, {
+                    "name": "福建省福州第三中学卫生站",
+                    "lnglat": [119.295531, 26.090834],
+                    "address": "鼓楼区湖东路43号",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|43号",
+                    "id": 217
+                }, {
+                    "name": "福建省福州市第十八中学医务室",
+                    "lnglat": [119.2904, 26.086808],
+                    "address": "鼓楼区善化坊37号",
+                    "formattedAddress": "福建省福州市鼓楼区善化坊|37号",
+                    "id": 218
+                }, {
+                    "name": "鼓楼区鼓西街道社区卫生服务中心",
+                    "lnglat": [119.293966, 26.088263],
+                    "address": "福州市鼓楼区元帅路1号联湖花园C座",
+                    "formattedAddress": "福建省福州市鼓楼区联湖花园|C座",
+                    "id": 219
+                }, {
+                    "name": "河南社区诊所",
+                    "lnglat": [119.286126, 26.077374],
+                    "address": "鼓楼区河南新村电影制片厂宿舍6座1层店面",
+                    "formattedAddress": "福建省福州市鼓楼区电影制片厂宿舍|6座",
+                    "id": 220
+                }, {
+                    "name": "修明中医诊所",
+                    "lnglat": [119.293, 26.081454],
+                    "address": "仓前街60号",
+                    "formattedAddress": "福建省福州市仓山区仓前街|60",
+                    "id": 221
+                }, {
+                    "name": "福州市鼓楼区石兴凯美容信息咨询有限公司中医诊所",
+                    "lnglat": [119.29856, 26.08491],
+                    "address": "八一七北路88号13层06室",
+                    "formattedAddress": "福建省福州市鼓楼区八一七北路|88",
+                    "id": 222
+                }, {
+                    "name": "福建人民艺术剧院医务室",
+                    "lnglat": [119.291275, 26.081819],
+                    "address": "白马北路167号",
+                    "formattedAddress": "福建省福州市鼓楼区白马北路|167号",
+                    "id": 223
+                }, {
+                    "name": "福建幼儿师范高等专科学校医务室",
+                    "lnglat": [119.288838, 26.081134],
+                    "address": "鼓楼区勺园49号",
+                    "formattedAddress": "福建省福州市鼓楼区勺园|49号",
+                    "id": 224
+                }, {
+                    "name": "福建省福州第二中学医务室",
+                    "lnglat": [119.292035, 26.078642],
+                    "address": "鼓楼区光禄坊100号",
+                    "formattedAddress": "福建省福州市鼓楼区光禄坊|100号",
+                    "id": 225
+                }, {
+                    "name": "福建省委党校医务室",
+                    "lnglat": [119.29849, 26.085126],
+                    "address": "鼓楼区南街柳河61号",
+                    "formattedAddress": "福建省福州市鼓楼区南街",
+                    "id": 226
+                }, {
+                    "name": "福建省福州杨桥中学医务室",
+                    "lnglat": [119.28568, 26.081755],
+                    "address": "鼓楼区学园路56号",
+                    "formattedAddress": "福建省福州市鼓楼区学园路|56号",
+                    "id": 227
+                }, {
+                    "name": "鼓楼区南街街道社区卫生服务中心",
+                    "lnglat": [119.297361, 26.085644],
+                    "address": "杨桥东路7号",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥东路|7号",
+                    "id": 228
+                }, {
+                    "name": "鼓楼区南街街道杨桥河南社区卫生服务站",
+                    "lnglat": [119.296311, 26.08604],
+                    "address": "鼓楼区杨桥新苑3#楼1层北侧临街巷",
+                    "formattedAddress": "福建省福州市鼓楼区杨桥",
+                    "id": 229
+                }, {
+                    "name": "鼓楼区南街街道柳河社区卫生服务站",
+                    "lnglat": [119.288072, 26.076278],
+                    "address": "鼓楼区柳河路36号",
+                    "formattedAddress": "福建省福州市鼓楼区柳河路|36",
+                    "id": 230
+                }, {
+                    "name": "鼓楼区南街街道灵响社区卫生服务站",
+                    "lnglat": [119.293903, 26.078599],
+                    "address": "福州市鼓楼区灵响新村一层D3、D4店面",
+                    "formattedAddress": "福建省福州市鼓楼区灵响新村",
+                    "id": 231
+                }, {
+                    "name": "鼓楼区南街街道驿里社区卫生服务站",
+                    "lnglat": [119.292894, 26.083005],
+                    "address": "鼓楼区通湖路226号一层店面",
+                    "formattedAddress": "福建省福州市鼓楼区通湖路|226",
+                    "id": 232
+                }, {
+                    "name": "福州市萧治安中医外科医院",
+                    "lnglat": [119.302361, 26.086463],
+                    "address": "东街38号",
+                    "formattedAddress": "福建省福州市鼓楼区东街|38号",
+                    "id": 233
+                }, {
+                    "name": "福州口岸门诊部",
+                    "lnglat": [119.307934, 26.086594],
+                    "address": "鼓楼区东街131号",
+                    "formattedAddress": "福建省福州市鼓楼区东街|131号",
+                    "id": 234
+                }, {
+                    "name": "福建省疾病预防控制中心门诊部",
+                    "lnglat": [119.302622, 26.081751],
+                    "address": "鼓楼区津泰路76号",
+                    "formattedAddress": "福建省福州市鼓楼区津泰路|76",
+                    "id": 235
+                }, {
+                    "name": "福州鼓楼仲仁康复中医门诊部",
+                    "lnglat": [119.307761, 26.082803],
+                    "address": "鼓楼区津泰路268号新大都时尚广场2楼西侧",
+                    "formattedAddress": "福建省福州市鼓楼区新大都时尚广场",
+                    "id": 236
+                }, {
+                    "name": "福州鼓楼尚洁口腔门诊部",
+                    "lnglat": [119.30287, 26.0859],
+                    "address": "鼓楼区东街33号武夷中心大楼16层",
+                    "formattedAddress": "福建省福州市鼓楼区武夷中心大楼",
+                    "id": 237
+                }, {
+                    "name": "福州鼓楼伊美新世纪整形外科门诊部",
+                    "lnglat": [119.300248, 26.086681],
+                    "address": "东街8号利达大厦A、B#连体三层11店",
+                    "formattedAddress": "福建省福州市鼓楼区利达大厦",
+                    "id": 238
+                }, {
+                    "name": "鼓楼袖里春堂中医门诊部",
+                    "lnglat": [119.303722, 26.086111],
+                    "address": "东街43号新都会财经广场一层A单元",
+                    "formattedAddress": "福建省福州市鼓楼区新都会财经广场",
+                    "id": 239
+                }, {
+                    "name": "李飞中医诊所",
+                    "lnglat": [119.30693, 26.086505],
+                    "address": "福州市鼓楼区东街街道121号新亚大厦10层05室-3",
+                    "formattedAddress": "福建省福州市鼓楼区东街街道|121号",
+                    "id": 240
+                }, {
+                    "name": "林珊口腔诊所",
+                    "lnglat": [119.30605, 26.086151],
+                    "address": "东街83号福建国际青年交流中心24层05写字间",
+                    "formattedAddress": "福建省福州市鼓楼区福建国际青年交流中心",
+                    "id": 241
+                }, {
+                    "name": "福州市蓓蕾幼儿园卫生站",
+                    "lnglat": [119.307372, 26.08061],
+                    "address": "福州市鼓楼区鳌峰坊46号",
+                    "formattedAddress": "福建省福州市鼓楼区鳌峰坊|46号",
+                    "id": 242
+                }, {
+                    "name": "福州教育学院附属第二小学卫生站",
+                    "lnglat": [119.307889, 26.080783],
+                    "address": "鼓楼区鳌峰坊42号",
+                    "formattedAddress": "福建省福州市鼓楼区鳌峰坊|42号",
+                    "id": 243
+                }, {
+                    "name": "福建省福州实验小学卫生站",
+                    "lnglat": [119.303939, 26.087151],
+                    "address": "鼓楼区东街82号",
+                    "formattedAddress": "福建省福州市鼓楼区东街|82",
+                    "id": 244
+                }, {
+                    "name": "福建省农业科学院医务室",
+                    "lnglat": [119.308072, 26.083119],
+                    "address": "鼓楼区大根路18号8座102房",
+                    "formattedAddress": "福建省福州市鼓楼区大根路|18",
+                    "id": 245
+                }, {
+                    "name": "福建省福州第一中学医务室",
+                    "lnglat": [119.303198, 26.086543],
+                    "address": "东街66号",
+                    "formattedAddress": "福建省福州市鼓楼区东街|66",
+                    "id": 246
+                }, {
+                    "name": "福州市鼓楼区东街街道社区卫生服务中心",
+                    "lnglat": [119.303562, 26.082446],
+                    "address": "鼓楼区津泰路98号9号楼附属楼1-3层（门面临靠东泰路街道）",
+                    "formattedAddress": "福建省福州市鼓楼区津泰路|98|9号楼",
+                    "id": 247
+                }, {
+                    "name": "鼓楼区东街街道大根社区卫生服务站",
+                    "lnglat": [119.307533, 26.083361],
+                    "address": "福州市鼓楼区城守前路9号店面",
+                    "formattedAddress": "福建省福州市鼓楼区城守前路",
+                    "id": 248
+                }, {
+                    "name": "福州登特口腔医院",
+                    "lnglat": [119.305044, 26.085347],
+                    "address": "仙塔街16号",
+                    "formattedAddress": "福建省福州市鼓楼区仙塔街|16",
+                    "id": 249
+                }, {
+                    "name": "福州市鼓楼区安泰街道社区卫生服务中心",
+                    "lnglat": [119.30412, 26.072678],
+                    "address": "福州市八一七中路145号",
+                    "formattedAddress": "福建省福州市台江区八一七中路|145号",
+                    "id": 250
+                }, {
+                    "name": "福州东方医院",
+                    "lnglat": [119.315757, 26.092926],
+                    "address": "鼓楼区六一北路251号",
+                    "formattedAddress": "福建省福州市鼓楼区六一北路|251号",
+                    "id": 251
+                }, {
+                    "name": "福州泌尿专科医院",
+                    "lnglat": [119.302333, 26.092592],
+                    "address": "湖东路155号",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|155号",
+                    "id": 252
+                }, {
+                    "name": "鼓楼尚医馆中医门诊部",
+                    "lnglat": [119.300979, 26.093717],
+                    "address": "中山路15号二层南向商场",
+                    "formattedAddress": "福建省福州市闽侯县中山路|15",
+                    "id": 253
+                }, {
+                    "name": "福州鼓楼同福医晓玲口腔门诊部",
+                    "lnglat": [119.300868, 26.09223],
+                    "address": "鼓楼区湖东路139-97号二楼",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|139号",
+                    "id": 254
+                }, {
+                    "name": "福州鼓楼庆诚口腔门诊部",
+                    "lnglat": [119.306526, 26.089309],
+                    "address": "鼓楼区融都国际商城8层",
+                    "formattedAddress": "福建省福州市鼓楼区融都国际",
+                    "id": 255
+                }, {
+                    "name": "福州鼓楼长青口腔门诊部",
+                    "lnglat": [119.302894, 26.092588],
+                    "address": "湖东路165号",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|165号",
+                    "id": 256
+                }, {
+                    "name": "福州鼓楼百纭凯曼医疗美容门诊部",
+                    "lnglat": [119.304042, 26.088458],
+                    "address": "井大路68号建银综合楼6层",
+                    "formattedAddress": "福建省福州市鼓楼区建银综合楼",
+                    "id": 257
+                }, {
+                    "name": "福州鼓楼华仁医疗美容门诊部",
+                    "lnglat": [119.299415, 26.087255],
+                    "address": "八一七北路89号贤南商厦",
+                    "formattedAddress": "福建省福州市鼓楼区贤南商厦",
+                    "id": 258
+                }, {
+                    "name": "福州美萨缔尔医疗美容门诊部",
+                    "lnglat": [119.304736, 26.090283],
+                    "address": "福州市鼓楼区化民营路78号基星阁2、3楼",
+                    "formattedAddress": "福建省福州市鼓楼区基星阁",
+                    "id": 259
+                }, {
+                    "name": "福州达拉斯医疗美容门诊部",
+                    "lnglat": [119.30605, 26.086151],
+                    "address": "东街街道东街83号福建国际青年交流中心1层01商业01、03单元、2层01商业、3层01商业",
+                    "formattedAddress": "福建省福州市鼓楼区福建国际青年交流中心",
+                    "id": 260
+                }, {
+                    "name": "鼓楼仁禾医疗美容门诊部",
+                    "lnglat": [119.308274, 26.08533],
+                    "address": "鼓楼区五一北路34号置福大厦2楼",
+                    "formattedAddress": "福建省福州市鼓楼区置福大厦",
+                    "id": 261
+                }, {
+                    "name": "李小楠诊所",
+                    "lnglat": [119.300981, 26.082356],
+                    "address": "安泰中心10座304室",
+                    "formattedAddress": "福建省福州市鼓楼区安泰中心|10座",
+                    "id": 262
+                }, {
+                    "name": "李宝英口腔诊所",
+                    "lnglat": [119.302883, 26.083693],
+                    "address": "东大路碧玉花园22号",
+                    "formattedAddress": "福建省福州市鼓楼区碧玉花园|22",
+                    "id": 263
+                }, {
+                    "name": "陈文口腔诊所",
+                    "lnglat": [119.30605, 26.086151],
+                    "address": "东街街道83号福建国际青年交流中心18层09写字间",
+                    "formattedAddress": "福建省福州市鼓楼区福建国际青年交流中心",
+                    "id": 264
+                }, {
+                    "name": "薛敏口腔诊所",
+                    "lnglat": [119.300339, 26.08275],
+                    "address": "鼓楼区八一七北路98号瑞丰楼二层21店面",
+                    "formattedAddress": "福建省福州市鼓楼区瑞丰楼",
+                    "id": 265
+                }, {
+                    "name": "悦己医疗美容诊所",
+                    "lnglat": [119.306658, 26.086272],
+                    "address": "东街121号新亚大厦七层715",
+                    "formattedAddress": "福建省福州市鼓楼区东街|121号",
+                    "id": 266
+                }, {
+                    "name": "访东皮肤科诊所",
+                    "lnglat": [119.300225, 26.082979],
+                    "address": "八一七北路98号",
+                    "formattedAddress": "福建省福州市鼓楼区八一七北路|98号",
+                    "id": 267
+                }, {
+                    "name": "胡晓华美容外科诊所",
+                    "lnglat": [119.307054, 26.082757],
+                    "address": "津泰路238号天荣星光天地13楼5层01室",
+                    "formattedAddress": "福建省福州市鼓楼区天荣星光天地",
+                    "id": 268
+                }, {
+                    "name": "林哲永中西医结合诊所",
+                    "lnglat": [119.306687, 26.082527],
+                    "address": "东街街道津泰路238号天荣星光天地B1座3楼303室",
+                    "formattedAddress": "福建省福州市鼓楼区天荣星光天地|B",
+                    "id": 269
+                }, {
+                    "name": "鼓楼协医堂中医门诊部",
+                    "lnglat": [119.30249, 26.07695],
+                    "address": "八一七路267号东兴大楼第、2#连体幢2单元02店面",
+                    "formattedAddress": "福建省福州市鼓楼区东兴大楼|2号楼",
+                    "id": 270
+                }, {
+                    "name": "福建晶特尔美可普鼓楼安泰口腔门诊部",
+                    "lnglat": [119.300282, 26.08049],
+                    "address": "福州市鼓楼区八一七北路190号闽星楼一层",
+                    "formattedAddress": "福建省福州市鼓楼区闽星楼",
+                    "id": 271
+                }, {
+                    "name": "鼓楼察微堂中医门诊部",
+                    "lnglat": [119.299443, 26.077671],
+                    "address": "安泰街道八一北路268号冠亚广场6#楼3层01店面",
+                    "formattedAddress": "福建省福州市鼓楼区冠亚广场|6号楼",
+                    "id": 272
+                }, {
+                    "name": "福州一脉阳光综合门诊部",
+                    "lnglat": [119.30274, 26.0734],
+                    "address": "八一中路98号渔阳大厦2F",
+                    "formattedAddress": "福建省福州市鼓楼区渔阳大厦",
+                    "id": 273
+                }, {
+                    "name": "韵琼内科诊所",
+                    "lnglat": [119.297686, 26.079602],
+                    "address": "澳门路63号澳门公寓07店面",
+                    "formattedAddress": "福建省福州市鼓楼区澳门公寓|7号楼",
+                    "id": 274
+                }, {
+                    "name": "李志中医内科诊所",
+                    "lnglat": [119.295708, 26.07733],
+                    "address": "道山路219号金品公寓1-2号楼10店面",
+                    "formattedAddress": "福建省福州市鼓楼区金品公寓|12",
+                    "id": 275
+                }, {
+                    "name": "黄劲松口腔诊所",
+                    "lnglat": [119.30044, 26.078365],
+                    "address": "道山路2号104室",
+                    "formattedAddress": "福建省福州市鼓楼区道山路|2号楼",
+                    "id": 276
+                }, {
+                    "name": "沈慈云口腔诊所",
+                    "lnglat": [119.301147, 26.074884],
+                    "address": "八一七路西营里市场力信新村1#1层13店面",
+                    "formattedAddress": "福建省福州市鼓楼区力信新村|1号楼",
+                    "id": 277
+                }, {
+                    "name": "悦美诊所",
+                    "lnglat": [119.294049, 26.072231],
+                    "address": "福州市鼓楼区乌山路75号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山路|75",
+                    "id": 278
+                }, {
+                    "name": "福州市鼓楼区健和堂医药商店中医坐堂医诊所",
+                    "lnglat": [119.302195, 26.077056],
+                    "address": "安泰街道八一七北路267号东兴大楼沿街店面一层17号店面",
+                    "formattedAddress": "福建省福州市鼓楼区八一七北路|267号",
+                    "id": 279
+                }, {
+                    "name": "陈勉曾医疗美容诊所",
+                    "lnglat": [119.300024, 26.076324],
+                    "address": "八一七北路268号冠亚广场8号楼3层",
+                    "formattedAddress": "福建省福州市鼓楼区冠亚广场|8栋",
+                    "id": 280
+                }, {
+                    "name": "福州市鼓楼区医诚健康管理有限公司中医诊所",
+                    "lnglat": [119.298007, 26.07839],
+                    "address": "安泰街道澳门路7、8楼1层07店面-2",
+                    "formattedAddress": "福建省福州市鼓楼区澳门路|7",
+                    "id": 281
+                }, {
+                    "name": "吕东中医诊所",
+                    "lnglat": [119.301176, 26.07719],
+                    "address": "安泰街道八一七北路268号冠亚广场1-3#、7、8#楼连接体地下层222店面",
+                    "formattedAddress": "福建省福州市鼓楼区冠亚广场",
+                    "id": 282
+                }, {
+                    "name": "上官丽萍中医诊所",
+                    "lnglat": [119.301081, 26.076684],
+                    "address": "安泰街道八一北路268号冠亚广场7#楼103店面",
+                    "formattedAddress": "福建省福州市鼓楼区冠亚广场|7",
+                    "id": 283
+                }, {
+                    "name": "福州市鼓楼区安泰街道社区养老服务照料中心医务室",
+                    "lnglat": [119.300224, 26.078398],
+                    "address": "福州市鼓楼区安泰街道道山路69号",
+                    "formattedAddress": "福建省福州市鼓楼区道山路|69",
+                    "id": 284
+                }, {
+                    "name": "福建省福州延安中学卫生站",
+                    "lnglat": [119.30237, 26.079289],
+                    "address": "鼓楼区学院前巷2号",
+                    "formattedAddress": "福建省福州市鼓楼区学院前巷|2",
+                    "id": 285
+                }, {
+                    "name": "福州市乌山小学卫生站",
+                    "lnglat": [119.2917, 26.074494],
+                    "address": "福州市乌山路120号",
+                    "formattedAddress": "福建省福州市鼓楼区乌山路|120",
+                    "id": 286
+                }, {
+                    "name": "福州香格里拉酒店卫生站",
+                    "lnglat": [119.305128, 26.074907],
+                    "address": "福州新权路9号",
+                    "formattedAddress": "福建省福州市鼓楼区新权路|9号",
+                    "id": 287
+                }, {
+                    "name": "福州市儿童学园卫生站",
+                    "lnglat": [119.291536, 26.075622],
+                    "address": "福州市白马北路289号",
+                    "formattedAddress": "福建省福州市鼓楼区白马北路|289号",
+                    "id": 288
+                }, {
+                    "name": "福州市格致中学卫生站",
+                    "lnglat": [119.30758, 26.079509],
+                    "address": "鼓楼区法海路41号",
+                    "formattedAddress": "福建省福州市鼓楼区法海路|41",
+                    "id": 289
+                }, {
+                    "name": "鼓楼美婕珑口腔门诊部",
+                    "lnglat": [119.303617, 26.093524],
+                    "address": "湖东路168号宏利大厦一层01店面、02店面",
+                    "formattedAddress": "福建省福州市鼓楼区宏利大厦",
+                    "id": 290
+                }, {
+                    "name": "郑世铭诊所",
+                    "lnglat": [119.301859, 26.098025],
+                    "address": "营迹路68号",
+                    "formattedAddress": "福建省福州市鼓楼区营迹路|68",
+                    "id": 291
+                }, {
+                    "name": "贾同道美容皮肤科诊所",
+                    "lnglat": [119.306639, 26.089414],
+                    "address": "福州市鼓楼区温泉街道五四路82号融都国际大厦15F03",
+                    "formattedAddress": "福建省福州市鼓楼区融都国际大厦",
+                    "id": 292
+                }, {
+                    "name": "开元东诊所",
+                    "lnglat": [119.301167, 26.08945],
+                    "address": "鼓东路105号",
+                    "formattedAddress": "福建省福州市鼓楼区鼓东路|105",
+                    "id": 293
+                }, {
+                    "name": "瑞祥诊所",
+                    "lnglat": [119.300672, 26.094752],
+                    "address": "中山路23号中山大院65号楼",
+                    "formattedAddress": "福建省福州市鼓楼区中山大院",
+                    "id": 294
+                }, {
+                    "name": "肖坤宁中医外科诊所",
+                    "lnglat": [119.30346, 26.088629],
+                    "address": "卫前里新村",
+                    "formattedAddress": "福建省福州市鼓楼区卫前里新村",
+                    "id": 295
+                }, {
+                    "name": "林炳英口腔诊所",
+                    "lnglat": [119.300806, 26.088536],
+                    "address": "尚宾路开元新村B3#9",
+                    "formattedAddress": "福建省福州市鼓楼区开元新村|B|3座",
+                    "id": 296
+                }, {
+                    "name": "陈爱珠口腔诊所",
+                    "lnglat": [119.301969, 26.088675],
+                    "address": "鼓东街道开元新村B4、57#店面",
+                    "formattedAddress": "福建省福州市鼓楼区开元新村|B",
+                    "id": 297
+                }, {
+                    "name": "薛杰口腔诊所",
+                    "lnglat": [119.302415, 26.089026],
+                    "address": "卫前里16号鼓东新村4-106",
+                    "formattedAddress": "福建省福州市鼓楼区鼓东新村|4座",
+                    "id": 298
+                }, {
+                    "name": "李晶晶口腔诊所",
+                    "lnglat": [119.305083, 26.088672],
+                    "address": "井大路120-1号店面",
+                    "formattedAddress": "福建省福州市鼓楼区井大路|-",
+                    "id": 299
+                }, {
+                    "name": "郭榕口腔诊所",
+                    "lnglat": [119.302435, 26.094728],
+                    "address": "观风亭公正新苑1号楼1层1号店面",
+                    "formattedAddress": "福建省福州市鼓楼区公正新苑|1号楼",
+                    "id": 300
+                }, {
+                    "name": "林芳口腔诊所",
+                    "lnglat": [119.302053, 26.095722],
+                    "address": "观风亭街50号嘉华公寓01.02店面",
+                    "formattedAddress": "福建省福州市鼓楼区嘉华公寓",
+                    "id": 301
+                }, {
+                    "name": "福州鼓楼晶丽口腔诊所",
+                    "lnglat": [119.303984, 26.090795],
+                    "address": "鼓楼区鼓东街道井大路113号柒星佳寓1层14商业用房",
+                    "formattedAddress": "福建省福州市鼓楼区柒星佳寓",
+                    "id": 302
+                }, {
+                    "name": "魏珊美容皮肤科诊所",
+                    "lnglat": [119.306639, 26.089414],
+                    "address": "鼓东街道五四路82号融都国际大厦12层03、02B ",
+                    "formattedAddress": "福建省福州市鼓楼区融都国际大厦",
+                    "id": 303
+                }, {
+                    "name": "郑秀萍中医骨伤诊所",
+                    "lnglat": [119.300356, 26.089386],
+                    "address": "鼓东路112号",
+                    "formattedAddress": "福建省福州市鼓楼区鼓东路",
+                    "id": 304
+                }, {
+                    "name": "林翰宇中医骨伤科诊所",
+                    "lnglat": [119.305871, 26.094386],
+                    "address": "鼓东街道五四路138号天福大厦9层904-905",
+                    "formattedAddress": "福建省福州市鼓楼区天福大厦",
+                    "id": 305
+                }, {
+                    "name": "林明春盲人医疗按摩所",
+                    "lnglat": [119.305591, 26.101673],
+                    "address": "五四路258号嘉健大厦4层119室",
+                    "formattedAddress": "福建省福州市鼓楼区嘉健大厦",
+                    "id": 306
+                }, {
+                    "name": "福州市规划设计研究院医务室",
+                    "lnglat": [119.30487, 26.093621],
+                    "address": "湖东路188号",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|188",
+                    "id": 307
+                }, {
+                    "name": "福建省福州第十九中学卫生站",
+                    "lnglat": [119.306022, 26.089434],
+                    "address": "鼓楼区庆城寺26号",
+                    "formattedAddress": "福建省福州市鼓楼区庆城寺",
+                    "id": 308
+                }, {
+                    "name": "福建省福州屏东中学医务室",
+                    "lnglat": [119.302616, 26.099286],
+                    "address": "屏东路39号",
+                    "formattedAddress": "福建省福州市福清市屏东路|39",
+                    "id": 309
+                }, {
+                    "name": "鼓楼三栗鼠口腔门诊部",
+                    "lnglat": [119.312763, 26.078696],
+                    "address": "福州市鼓楼区水部街道建华支巷6号建华温泉公寓二期1#楼1层01店面、2层01店面",
+                    "formattedAddress": "福建省福州市鼓楼区建华温泉公寓2期|1栋",
+                    "id": 310
+                }, {
+                    "name": "福佳诊所",
+                    "lnglat": [119.315904, 26.077716],
+                    "address": "古田支路116号",
+                    "formattedAddress": "福建省福州市鼓楼区古田支路|116",
+                    "id": 311
+                }, {
+                    "name": "和辉诊所",
+                    "lnglat": [119.317578, 26.080619],
+                    "address": "福新路273号",
+                    "formattedAddress": "福建省福州市晋安区福新路|273",
+                    "id": 312
+                }, {
+                    "name": "郑金钗内科诊所",
+                    "lnglat": [119.315558, 26.075629],
+                    "address": "古乐路3号",
+                    "formattedAddress": "福建省福州市鼓楼区古乐路|3",
+                    "id": 313
+                }, {
+                    "name": "天亮内科诊所",
+                    "lnglat": [119.318966, 26.071831],
+                    "address": "六一中路90号福田商住5号店面",
+                    "formattedAddress": "福建省福州市鼓楼区六一中路|90号",
+                    "id": 314
+                }, {
+                    "name": "李建国口腔诊所",
+                    "lnglat": [119.314367, 26.077764],
+                    "address": "古田支路62号",
+                    "formattedAddress": "福建省福州市鼓楼区古田支路|62号",
+                    "id": 315
+                }, {
+                    "name": "肖益春口腔诊所",
+                    "lnglat": [119.319727, 26.079413],
+                    "address": "鼓楼区六一天创佳缘2楼",
+                    "formattedAddress": "福建省福州市鼓楼区天创佳缘",
+                    "id": 316
+                }, {
+                    "name": "闽江学院附属中学卫生站",
+                    "lnglat": [119.317393, 26.070041],
+                    "address": "王庄大树兜35号",
+                    "formattedAddress": "福建省福州市鼓楼区大树兜|35号",
+                    "id": 317
+                }, {
+                    "name": "鼓楼区水部街道社区卫生服务中心",
+                    "lnglat": [119.317192, 26.077302],
+                    "address": "古田支路61号",
+                    "formattedAddress": "福建省福州市鼓楼区古田支路|61",
+                    "id": 318
+                }, {
+                    "name": "鼓楼区水部街道建华社区卫生服务站",
+                    "lnglat": [119.31266, 26.078236],
+                    "address": "水部街道建华温泉公寓二期2#楼1层02-03店",
+                    "formattedAddress": "福建省福州市鼓楼区火里巷建华温泉公寓二期|2号",
+                    "id": 319
+                }, {
+                    "name": "中国人民银行福建省分行医务室",
+                    "lnglat": [119.305991, 26.093613],
+                    "address": "鼓楼区湖东路190号",
+                    "formattedAddress": "福建省福州市鼓楼区湖东路|190号",
+                    "id": 320
+                }, {
+                    "name": "福州市鼓楼区鼓东街道社区卫生服务中心",
+                    "lnglat": [119.302935, 26.095207],
+                    "address": "鼓楼区观凤亭街道观风亭新苑1区2号楼3层",
+                    "formattedAddress": "福建省福州市鼓楼区新苑1区|2号楼",
+                    "id": 321
+                }, {
+                    "name": "鼓楼区鼓东街道开元社区卫生服务站",
+                    "lnglat": [119.3052, 26.08845],
+                    "address": "鼓楼区井大路卫前里小区1号楼24、26店面",
+                    "formattedAddress": "福建省福州市鼓楼区卫前里小区|1号楼",
+                    "id": 322
+                }, {
+                    "name": "鼓楼区鼓东街道观风亭社区卫生服务站",
+                    "lnglat": [119.302817, 26.097531],
+                    "address": "鼓楼区观凤亭街62号",
+                    "formattedAddress": "福建省福州市鼓楼区观凤亭街",
+                    "id": 323
+                }, {
+                    "name": "福州鼓楼康玺综合门诊部",
+                    "lnglat": [119.29992, 26.087102],
+                    "address": "鼓楼区贤南路26号明星影城3-4层",
+                    "formattedAddress": "福建省福州市鼓楼区明星影城",
+                    "id": 324
+                }, {
+                    "name": "福州盘屿中医骨科医院",
+                    "lnglat": [119.321444, 26.072049],
+                    "address": "福州市鼓楼区六一中路115号龙达楼",
+                    "formattedAddress": "福建省福州市鼓楼区龙达楼",
+                    "id": 325
+                }, {
+                    "name": "福州市按摩医院",
+                    "lnglat": [119.313829, 26.076801],
+                    "address": "福州市鼓楼区古田路60号福晟财务中心9层",
+                    "formattedAddress": "福建省福州市鼓楼区古田路|60号",
+                    "id": 326
+                }, {
+                    "name": "福州上工汇鼓楼综合门诊部",
+                    "lnglat": [119.310549, 26.078275],
+                    "address": "鼓楼区五一北路157号正祥商务中心三层",
+                    "formattedAddress": "福建省福州市鼓楼区正祥中心",
+                    "id": 327
+                }, {
+                    "name": "福州鼓楼亚华口腔门诊部",
+                    "lnglat": [119.31871, 26.06987],
+                    "address": "六一中路136号温馨苑5#、6#楼1层28店面2层01店面",
+                    "formattedAddress": "福建省福州市鼓楼区温馨苑",
+                    "id": 328
+                }, {
+                    "name": "福州鼓楼爱美尔医疗美容门诊部",
+                    "lnglat": [119.3121, 26.075015],
+                    "address": "鼓楼区五一中路29号龙华大厦",
+                    "formattedAddress": "福建省福州市鼓楼区龙华大厦",
+                    "id": 329
+                }, {
+                    "name": "福建晶特尔美可普鼓楼东大口腔门诊部",
+                    "lnglat": [119.30891, 26.086657],
+                    "address": "鼓楼区东大路1号",
+                    "formattedAddress": "福建省福州市鼓楼区东大路|1号",
+                    "id": 330
+                }, {
+                    "name": "福建晶特尔美可普鼓楼口腔门诊部",
+                    "lnglat": [119.306581, 26.101646],
+                    "address": "五四路银河花园15楼",
+                    "formattedAddress": "福建省福州市鼓楼区银河花园酒店|15楼",
+                    "id": 331
+                }, {
+                    "name": "福州鼓楼晶美口腔门诊部",
+                    "lnglat": [119.306483, 26.10003],
+                    "address": "五四路217-1号电教大楼沿街附楼2层",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|217|1号",
+                    "id": 332
+                }, {
+                    "name": "福州鼓楼爱微笑口腔门诊部",
+                    "lnglat": [119.314269, 26.099795],
+                    "address": "温泉街道公园路",
+                    "formattedAddress": "福建省福州市晋安区公园路",
+                    "id": 333
+                }, {
+                    "name": "福州鼓楼同福医五四口腔门诊部",
+                    "lnglat": [119.307514, 26.095276],
+                    "address": "玉泉路1号",
+                    "formattedAddress": "福建省福州市福清市玉泉路|1号",
+                    "id": 334
+                }, {
+                    "name": "福州斯麦尔口腔门诊部",
+                    "lnglat": [119.306629, 26.097178],
+                    "address": "五四路151号花都大厦1层13、14店面",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|151号",
+                    "id": 335
+                }, {
+                    "name": "民康诊所",
+                    "lnglat": [119.31063, 26.102451],
+                    "address": "华林路203号",
+                    "formattedAddress": "福建省福州市鼓楼区华林路|203号",
+                    "id": 336
+                }, {
+                    "name": "杨清梧内科诊所",
+                    "lnglat": [119.308303, 26.096522],
+                    "address": "树汤路172号东汤新村10号楼底层店面",
+                    "formattedAddress": "福建省福州市鼓楼区汤边新村|10座",
+                    "id": 337
+                }, {
+                    "name": "阳光诊所",
+                    "lnglat": [119.314319, 26.081998],
+                    "address": "东水路78号阳光城14栋5-1号店",
+                    "formattedAddress": "福建省福州市鼓楼区阳光城|14座",
+                    "id": 338
+                }, {
+                    "name": "周斌口腔诊所",
+                    "lnglat": [119.315699, 26.080853],
+                    "address": "福新路178号",
+                    "formattedAddress": "福建省福州市晋安区福新路|178号",
+                    "id": 339
+                }, {
+                    "name": "李少川口腔诊所",
+                    "lnglat": [119.313809, 26.082396],
+                    "address": "东水路78号",
+                    "formattedAddress": "福建省福州市鼓楼区东水路|78号",
+                    "id": 340
+                }, {
+                    "name": "林宝口腔诊所",
+                    "lnglat": [119.317631, 26.080375],
+                    "address": "福新西路188号",
+                    "formattedAddress": "福建省福州市鼓楼区福新西路",
+                    "id": 341
+                }, {
+                    "name": "林峥贻口腔诊所",
+                    "lnglat": [119.315166, 26.083891],
+                    "address": "鼓楼区东水路46号店",
+                    "formattedAddress": "福建省福州市鼓楼区东水路",
+                    "id": 342
+                }, {
+                    "name": "青洋口腔诊所",
+                    "lnglat": [119.31063, 26.102451],
+                    "address": "华林路203号",
+                    "formattedAddress": "福建省福州市鼓楼区华林路|203号",
+                    "id": 343
+                }, {
+                    "name": "马守治口腔诊所",
+                    "lnglat": [119.314491, 26.090756],
+                    "address": "温泉街道东城边街39号恒宇国际A座420-421室",
+                    "formattedAddress": "福建省福州市鼓楼区恒宇国际|A栋",
+                    "id": 344
+                }, {
+                    "name": "黄胜春口腔诊所",
+                    "lnglat": [119.316154, 26.087599],
+                    "address": "东大路251号汇通商厦108-110单元",
+                    "formattedAddress": "福建省福州市鼓楼区汇通商厦",
+                    "id": 345
+                }, {
+                    "name": "岳山美容外科诊所",
+                    "lnglat": [119.307926, 26.088858],
+                    "address": "五四路9号宁德大厦11层1101号",
+                    "formattedAddress": "福建省福州市鼓楼区宁德大厦",
+                    "id": 346
+                }, {
+                    "name": "毛信源盲人医疗按摩所",
+                    "lnglat": [119.314428, 26.090475],
+                    "address": "温泉街道东城边街39号恒宇国际1#座9层13商务办公",
+                    "formattedAddress": "福建省福州市鼓楼区恒宇国际|1座",
+                    "id": 347
+                }, {
+                    "name": "朱坤健中医内科诊所",
+                    "lnglat": [119.309019, 26.098259],
+                    "address": "温泉街道树汤路66号凯旋花园1、2、3#楼连接体1层1号店面",
+                    "formattedAddress": "福建省福州市鼓楼区凯旋花园|1",
+                    "id": 348
+                }, {
+                    "name": "金凌辉诊所",
+                    "lnglat": [119.309146, 26.101146],
+                    "address": "温泉街道树汤路17号康光温泉小区1#楼1层19店面",
+                    "formattedAddress": "福建省福州市鼓楼区康光温泉|1号楼",
+                    "id": 349
+                }, {
+                    "name": "鼓楼区水部街道闽都社区卫生服务站",
+                    "lnglat": [119.31528, 26.07501],
+                    "address": "鼓楼区古乐路5号",
+                    "formattedAddress": "福建省福州市鼓楼区古乐路|5",
+                    "id": 350
+                }, {
+                    "name": "鼓楼区水部街道福新社区卫生服务站",
+                    "lnglat": [119.316684, 26.080466],
+                    "address": "鼓楼区福新西路新洋巷9号店面",
+                    "formattedAddress": "福建省福州市鼓楼区新洋巷",
+                    "id": 351
+                }, {
+                    "name": "鼓楼区水部街道莲宅社区卫生服务站",
+                    "lnglat": [119.32123, 26.07379],
+                    "address": "鼓楼区东光花园3号楼79号店面",
+                    "formattedAddress": "福建省福州市鼓楼区东光花园|3",
+                    "id": 352
+                }, {
+                    "name": "鼓楼杏桔堂中医门诊部",
+                    "lnglat": [119.309951, 26.074982],
+                    "address": "鼓楼区五一中路18号正大广场大洋天地2楼A28",
+                    "formattedAddress": "福建省福州市鼓楼区大洋天地",
+                    "id": 353
+                }, {
+                    "name": "福州鼓楼医院",
+                    "lnglat": [119.310711, 26.080328],
+                    "address": "五一北路123号",
+                    "formattedAddress": "福建省福州市鼓楼区五一北路|123",
+                    "id": 354
+                }, {
+                    "name": "福州格莱美美容医院",
+                    "lnglat": [119.308799, 26.08719],
+                    "address": "东大路6号",
+                    "formattedAddress": "福建省福州市罗源县东大路|6号",
+                    "id": 355
+                }, {
+                    "name": "福建省医学科学研究院综合门诊部",
+                    "lnglat": [119.307528, 26.087901],
+                    "address": "鼓楼区五四路7号",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|7",
+                    "id": 356
+                }, {
+                    "name": "福州鼓楼爱康国宾综合门诊部",
+                    "lnglat": [119.315553, 26.089239],
+                    "address": "六一北路328号金源花园三层",
+                    "formattedAddress": "福建省福州市鼓楼区金源花园",
+                    "id": 357
+                }, {
+                    "name": "福建省邮电管理局门诊部",
+                    "lnglat": [119.31031, 26.085207],
+                    "address": "鼓楼区纱帽井1号",
+                    "formattedAddress": "福建省福州市鼓楼区纱帽井|1号",
+                    "id": 358
+                }, {
+                    "name": "北京同仁堂福建药业连锁有限公司东大中医门诊部",
+                    "lnglat": [119.31251, 26.087615],
+                    "address": "东大路88号建闽大厦二层",
+                    "formattedAddress": "福建省福州市鼓楼区建闽大厦",
+                    "id": 359
+                }, {
+                    "name": "福州教育学院附属第一小学卫生站",
+                    "lnglat": [119.309932, 26.084563],
+                    "address": "鼓楼区蒙古营5号",
+                    "formattedAddress": "福建省福州市鼓楼区蒙古营|5号",
+                    "id": 360
+                }, {
+                    "name": "中国人民财产保险股份有限公司福建省分公司医务室",
+                    "lnglat": [119.306715, 26.100846],
+                    "address": "五四路233号保险大厦17楼",
+                    "formattedAddress": "福建省福州市鼓楼区保险大厦",
+                    "id": 361
+                }, {
+                    "name": "中国人寿保险股份有限公司福建省分公司医务室",
+                    "lnglat": [119.306728, 26.100929],
+                    "address": "鼓楼区五四路233号",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|233号",
+                    "id": 362
+                }, {
+                    "name": "福建省福州第十一中学医务室",
+                    "lnglat": [119.310989, 26.080586],
+                    "address": "鼓楼区劳动路18号",
+                    "formattedAddress": "福建省福州市鼓楼区劳动路|18号",
+                    "id": 363
+                }, {
+                    "name": "鼓楼区温泉街道社区卫生服务中心",
+                    "lnglat": [119.308536, 26.097854],
+                    "address": "福州市鼓楼区五四路147号星顺明珠3-4层",
+                    "formattedAddress": "福建省福州市鼓楼区星顺明珠",
+                    "id": 364
+                }, {
+                    "name": "鼓楼区温泉街道汤边社区卫生服务站",
+                    "lnglat": [119.307484, 26.09903],
+                    "address": "鼓楼区五四路173号3---7＃店面",
+                    "formattedAddress": "福建省福州市鼓楼区五四路|173号",
+                    "id": 365
+                }, {
+                    "name": "鼓楼区温泉街道金汤社区卫生服务站",
+                    "lnglat": [119.309472, 26.092539],
+                    "address": "鼓楼区金福新村11座",
+                    "formattedAddress": "福建省福州市鼓楼区金福新村|11座",
+                    "id": 366
+                }, {
+                    "name": "鼓楼区温泉街道琼河社区卫生服务站",
+                    "lnglat": [119.316181, 26.082261],
+                    "address": "鼓楼区福新西路宜发得贵城7号楼琼福路40号",
+                    "formattedAddress": "福建省福州市鼓楼区琼福路|40",
+                    "id": 367
+                }, {
+                    "name": "福州鼓楼曙光医疗美容门诊部",
+                    "lnglat": [119.30934, 26.08362],
+                    "address": "鼓楼区五一北路77号",
+                    "formattedAddress": "福建省福州市鼓楼区五一北路|77",
+                    "id": 368
+                }, {
+                    "name": "福州美兆综合门诊部",
+                    "lnglat": [119.307926, 26.088858],
+                    "address": "五四路9号宁德大厦3-7层",
+                    "formattedAddress": "福建省福州市鼓楼区宁德大厦",
+                    "id": 369
+                }]
+
+                drawBounds();
+
+                function drawBounds() {
+                    //加载行政区划插件
+                    if (!district) {
+                        //实例化DistrictSearch
+                        var opts = {
+                            subdistrict: 1,   //获取边界不需要返回下级行政区
+                            extensions: 'all',  //返回行政区边界坐标组等具体信息
+                            level: 'district',  //查询行政级别为区
+                            showbiz: false
+                        };
+                        district = new AMap.DistrictSearch(opts);
+                    }
+
+                    //行政区查询
+                    district.search('350102', function (status, result) {
+                        map.remove(polygons)//清除上次结果
+
+                        polygons = [];
+
+                        var bounds = result.districtList[0].boundaries;
+
+                        console.log('bounds', bounds)
+
+                        var outer = [
+                            new AMap.LngLat(-360, 90, true),
+                            new AMap.LngLat(-360, -90, true),
+                            new AMap.LngLat(360, -90, true),
+                            new AMap.LngLat(360, 90, true),
+                        ]
+                        var pathArray = [
+                            outer
+                        ];
+                        pathArray.push.apply(pathArray, bounds)
+
+                        //生成行政区划polygon
+                        var polygon = new AMap.Polygon({
+                            strokeWeight: 1,
+                            // path: bounds[i],
+                            path: pathArray,
+                            fillOpacity: 0.7,
+                            fillColor: '#333',
+                            strokeColor: '#0091ea'
+                        });
+                        polygons.push(polygon);
+
+                        map.add(polygons)
+
+                        addMassMarks(orgMarkData)
+                    });
+                }
+
+                function addMassMarks(data) {
+                    var mass = new AMap.MassMarks(data, {
+                        opacity: 0.8,
+                        cursor: 'pointer',
+                        zIndex: 100,
+                        zooms: [3, 19],  // 在指定地图缩放级别范围内展示海量点图层
+                        style: {
+                            url: 'https://a.amap.com/jsapi_demos/static/images/mass0.png',  // 图标地址
+                            anchor: new AMap.Pixel(4, 4), // 图标显示位置偏移量，基准点为图标左上角
+                            size: new AMap.Size(8, 8)      // 图标大小
+                        }
+                    });
+
+                    var marker = new AMap.Marker({content: ' ', map: map});
+
+                    mass.on('mouseover', function (e) {
+                        marker.setPosition(e.data.lnglat);
+                        marker.setLabel({
+                            content: "<div class='info'>" + e.data.name + "</div>",
+                            direction: 'right'
+                        })
+                        marker.show()
+                        getOrgTipoff(e.data.name, function (number) {
+                            marker.setLabel({
+                                content: "<div class='info'>" + e.data.name + "</br>投诉举报数: " + number + "</div>",
+                                direction: 'right'
+                            })
+                        })
+                    });
+
+                    mass.on('mouseout', function (e) {
+                        // marker.hide()
+                    });
+
+                    mass.setMap(map);
+                }
+
+                function getOrgTipoff(orgName, callback) {
+                    $.ajax({
+                        method: "GET",
+                        url: GLOBAL_API.BIG_DATA.QUERY_ORG_TIPOFF,
+                        data: {
+                            orgName: orgName,
+                        }
+                    }).done(function (resData) {
+                        // var resData = JSON.parse(res)
+                        if (resData.code !== 100) {
+                            return
+                        }
+
+                        callback(resData.datas[0].number)
+                    }).fail(function (res) {
+                        _this.$message.error("网络异常");
+                    })
+                }
+            },
+            // showMap: function () {
+            //     var myChart = echarts.init(document.getElementById('chart'));
+            //     echarts.registerMap('fuzhou', fuzhou);
+            //
+            //     option = {
+            //         title: {
+            //             text: '香港18区人口密度 （2011）',
+            //             subtext: '人口密度数据来自Wikipedia',
+            //             sublink: 'http://zh.wikipedia.org/wiki/%E9%A6%99%E6%B8%AF%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83#cite_note-12'
+            //         },
+            //         tooltip: {
+            //             trigger: 'item',
+            //             formatter: '{b}<br/>{c} (p / km2)'
+            //         },
+            //         // toolbox: {
+            //         //     show: true,
+            //         //     orient: 'vertical',
+            //         //     left: 'right',
+            //         //     top: 'center',
+            //         //     feature: {
+            //         //         dataView: {readOnly: false},
+            //         //         restore: {},
+            //         //         saveAsImage: {}
+            //         //     }
+            //         // },
+            //         visualMap: {
+            //             min: 800,
+            //             max: 50000,
+            //             text: ['High', 'Low'],
+            //             realtime: false,
+            //             calculable: true,
+            //             inRange: {
+            //                 color: ['lightskyblue', 'yellow', 'orangered']
+            //             }
+            //         },
+            //         series: [
+            //             {
+            //                 name: '香港18区人口密度',
+            //                 type: 'map',
+            //                 mapType: 'fuzhou', // 自定义扩展图表类型
+            //                 zoom: 1, //当前视角的缩放比例
+            //                 roam: true, //是否开启平游或缩放
+            //                 scaleLimit: { //滚轮缩放的极限控制
+            //                     min: 1,
+            //                     max: 50
+            //                 },
+            //                 // left: 0,
+            //                 // top: 0,
+            //                 // right: 0,
+            //                 // bottom: 0,
+            //                 // boundingCoords: [
+            //                 //     // 定位左上角经纬度
+            //                 //     [-180, 90],
+            //                 //     // 定位右下角经纬度
+            //                 //     [180, -90]
+            //                 // ],
+            //                 // center: [119.28, 26.08],
+            //                 itemStyle: {
+            //                     normal: {
+            //                         label: {
+            //                             show: true,
+            //                             color: '#54fef3'
+            //                         },
+            //                         areaColor: '#02356d',
+            //                         borderColor: '#129eed',
+            //                         borderWidth: 2,
+            //                     },
+            //                     emphasis: {
+            //                         label: {show: true}
+            //                     }
+            //                 },
+            //                 data: [
+            //                     {name: '中西区', value: 20057.34},
+            //                     {name: '湾仔', value: 15477.48},
+            //                     {name: '东区', value: 31686.1},
+            //                     {name: '南区', value: 6992.6},
+            //                     {name: '油尖旺', value: 44045.49},
+            //                     {name: '深水埗', value: 40689.64},
+            //                     {name: '九龙城', value: 37659.78},
+            //                     {name: '黄大仙', value: 45180.97},
+            //                     {name: '观塘', value: 55204.26},
+            //                     {name: '葵青', value: 21900.9},
+            //                     {name: '荃湾', value: 4918.26},
+            //                     {name: '屯门', value: 5881.84},
+            //                     {name: '元朗', value: 4178.01},
+            //                     {name: '北区', value: 2227.92},
+            //                     {name: '大埔', value: 2180.98},
+            //                     {name: '沙田', value: 9172.94},
+            //                     {name: '西贡', value: 3368},
+            //                     {name: '离岛', value: 806.98}
+            //                 ],
+            //             }
+            //         ]
+            //     }
+            //
+            //     myChart.setOption(option, true);
+            // },
+            //百度地图
+        },
+    })
+</script>
+</body>
+</html>
