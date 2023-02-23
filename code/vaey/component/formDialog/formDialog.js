@@ -220,9 +220,9 @@ var code = `<div>
        <!--底部插槽-->
        <slot name="footer"></slot>
        <span v-if="!noFooter" slot="footer" class="dialog-footer">
-            <template v-if="buttons && buttons.length > 0">
+            <template v-if="dataButtons && dataButtons.length > 0">
                 <el-button size="small" @click="cancel">取 消</el-button>
-                 <template v-for="button in buttons">
+                 <template v-for="button in dataButtons">
                     <el-button size="small" @click="confirm(button.url)" :type="(button.type) ? button.type : \'primary\'">{{button.label}}</el-button>
                 </template>
             </template>
@@ -412,6 +412,7 @@ Vue.component('form-dialog-component', {
     },
     data: function () {
         return {
+            dataButtons: this.buttons,
             formVisible: false,
             clickRowData: this.currentRow,
             formData: {},
@@ -518,6 +519,17 @@ Vue.component('form-dialog-component', {
     methods: {
         setCurrentRow(row) {
             this.clickRowData = row
+        },
+        hiddenButton(buttonRef, visual) {
+
+            // let _this = this;
+            // _this.$refs[buttonRef][0].disabled = true
+            for(var i=0; i<this.dataButtons.length; i++) {
+                var button = this.dataButtons[i];
+                if(button.ref === buttonRef) {
+                    button.disabled = visual
+                }
+            }
         },
         setFormDialogTableData(key) {
             this.tableData = this.clickRowData[key]

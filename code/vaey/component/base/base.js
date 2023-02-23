@@ -669,6 +669,9 @@ Vue.component('base-component', {
         },
         setFormDialogTableData(ref, key) {
             this.$refs[ref][0].setFormDialogTableData(key);
+        },
+        hiddenButton(dialogRef, buttonRef, visual) {
+            this.$refs[dialogRef][0].hiddenButton(buttonRef, visual);
         }
     }
 
