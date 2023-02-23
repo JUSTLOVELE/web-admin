@@ -1,5 +1,5 @@
 var code = `<div>
-    <el-dialog :title="title" :visible.sync="formVisible" @closed="onDialogClosed" class="form-dialog-comp" :close-on-click-modal="false" :width="width">
+    <el-dialog :title="title" :visible.sync="formVisible" @closed="onDialogClosed" class="form-dialog-comp" :width="width" :close-on-click-modal="false">
        <!--头部插槽-->
        <slot name="header"></slot>
        <el-form :inline="true" status-icon ref="form" :model="formData" :rules="rules" size="mini">
@@ -184,6 +184,7 @@ var code = `<div>
                        :accept="module.uploader.accept || \'image/*\'"
                        :on-preview="handlePictureCardPreview"
                        :on-remove="handleRemove"
+                       :on-change="uploadChange"
                        :limit="module.uploader.size || 9"
                        :multiple="module.uploader.multiple === undefined ? true : module.uploader.multiple"
                        :http-request="handleAddUpload"
@@ -207,6 +208,7 @@ var code = `<div>
                                :accept="module.uploader.accept || \'image/*\'"
                                :on-preview="handlePictureCardPreview"
                                :on-remove="handleRemove"
+                               :on-change="uploadChange"
                                :drag="true"
                                :limit="module.uploader.size || 9"
                                :multiple="module.uploader.multiple === undefined ? true : module.uploader.multiple"
@@ -477,42 +479,43 @@ Vue.component('form-dialog-component', {
         },
         module: {
             handler(newVal, oldValue) {
-                var _this = this
-                if (newVal.uploader && newVal.uploader.fileUrls != null) { //可能是''空字符串，这时需要清空
-                    _this.fileList = []
-                    _this.fileUrlStr = _this.module.uploader.fileUrls //文件url保存下来，删除文件时进行处理
-                    _this.thumbUrlStr = _this.module.uploader.thumbUrls //图片缩略图
-
-                    _this.toRemovedUrls = []
-                    var nameList = []
-                    if (newVal.uploader.fileNames != null) {
-                        nameList = newVal.uploader.fileNames.split(',')
-                    }
-
-                    if (_this.thumbUrlStr && _this.thumbUrlStr !== 'null') {
-                        var rawList = _this.fileUrlStr.split(',')
-                        _this.thumbUrlStr.split(',').forEach(function (url, index) {
-                            if (url) {
-                                _this.fileList.push({
-                                    // name: index + '',
-                                    name: _this.module.uploader.filename || nameList[index] || url.match(/.+\/(.+\..+)$/)[1],
-                                    url: url,
-                                    rawUrl: rawList[index]
-                                })
-                            }
-                        })
-                    } else if (_this.fileUrlStr && _this.fileUrlStr !== 'null') {
-                        _this.fileUrlStr.split(',').forEach(function (url, index) {
-                            if (url) {
-                                _this.fileList.push({
-                                    // name: index + '',
-                                    name: _this.module.uploader.filename || nameList[index] || url.match(/.+\/(.+\..+)$/)[1],
-                                    url: url
-                                })
-                            }
-                        })
-                    }
-                }
+                console.log("如果有看到这个消息请复制给开发者谢谢!module-----------------------------------------------------------------")
+                // var _this = this
+                // if (newVal.uploader && newVal.uploader.fileUrls != null) { //可能是''空字符串，这时需要清空
+                //     _this.fileList = []
+                //     _this.fileUrlStr = _this.module.uploader.fileUrls //文件url保存下来，删除文件时进行处理
+                //     _this.thumbUrlStr = _this.module.uploader.thumbUrls //图片缩略图
+                //
+                //     _this.toRemovedUrls = []
+                //     var nameList = []
+                //     if (newVal.uploader.fileNames != null) {
+                //         nameList = newVal.uploader.fileNames.split(',')
+                //     }
+                //
+                //     if (_this.thumbUrlStr && _this.thumbUrlStr !== 'null') {
+                //         var rawList = _this.fileUrlStr.split(',')
+                //         _this.thumbUrlStr.split(',').forEach(function (url, index) {
+                //             if (url) {
+                //                 _this.fileList.push({
+                //                     // name: index + '',
+                //                     name: _this.module.uploader.filename || nameList[index] || url.match(/.+\/(.+\..+)$/)[1],
+                //                     url: url,
+                //                     rawUrl: rawList[index]
+                //                 })
+                //             }
+                //         })
+                //     } else if (_this.fileUrlStr && _this.fileUrlStr !== 'null') {
+                //         _this.fileUrlStr.split(',').forEach(function (url, index) {
+                //             if (url) {
+                //                 _this.fileList.push({
+                //                     // name: index + '',
+                //                     name: _this.module.uploader.filename || nameList[index] || url.match(/.+\/(.+\..+)$/)[1],
+                //                     url: url
+                //                 })
+                //             }
+                //         })
+                //     }
+                // }
             }
         }
     },
@@ -560,6 +563,33 @@ Vue.component('form-dialog-component', {
                 }
                 //要删除的文件url
                 this.toRemovedUrls.push(matched.url)
+            }
+        },
+        uploadChange: function(file, fileList) {
+            var suffix = file.name.match(/.+\.(.+)$/)[1]
+
+            if (suffix === 'pdf'
+                || suffix === 'doc'
+                || suffix === 'docx'
+                || suffix === 'xls'
+                || suffix === 'xlsx'
+                || suffix === 'ppt'
+                || suffix === 'pptx'
+            ) {
+                //file.url = "http://localhost:9000/srm/a.jpg";
+
+            } else if (suffix === 'mp4'
+                || suffix === 'mp3'
+                || suffix === 'avi'
+                || suffix === 'wmv'
+                || suffix === 'mpg'
+                || suffix === 'mpeg'
+                || suffix === 'mov'
+                || suffix === 'rm'
+                || suffix === 'ram'
+                || suffix === 'swf'
+                || suffix === 'flv') {
+                //file.url = "http://localhost:9000/srm/a.jpg";
             }
         },
         handlePictureCardPreview: function (file) {
@@ -769,6 +799,7 @@ Vue.component('form-dialog-component', {
                     }
 
                     _this.waitUploadList = {} //重置待上传列表
+                    _this.toRemovedUrls = []
 
                     if (typeof (_this.toDynamicTableRemovedUrls) != "undefined" && _this.toDynamicTableRemovedUrls.length > 0) {
                         _this.fileFormData.set("deleteDynamicTableFile", _this.toDynamicTableRemovedUrls.join(','))
