@@ -189,7 +189,9 @@ var code = `<div>
                        :multiple="module.uploader.multiple === undefined ? true : module.uploader.multiple"
                        :http-request="handleAddUpload"
                        v-bind="module.uploader.props">
-              <el-button size="small" type="primary">点击上传</el-button>
+              <template v-if="!module.uploader.hiddenUploadButton">
+                    <el-button size="small" type="primary">点击上传</el-button>
+              </template>
               <div slot="tip" class="el-upload__tip">{{module.uploader.label || "　上传图片"}}</div>
             </el-upload>
          </template>
@@ -225,7 +227,7 @@ var code = `<div>
             <template v-if="dataButtons && dataButtons.length > 0">
                 <el-button size="small" @click="cancel">取 消</el-button>
                  <template v-for="button in dataButtons">
-                    <el-button size="small" @click="confirm(button.url)" :type="(button.type) ? button.type : \'primary\'">{{button.label}}</el-button>
+                    <el-button :disabled="button.disabled" :ref="button.ref" size="small" @click="confirm(button.url, button.callBack)" :type="(button.type) ? button.type : \'primary\'">{{button.label}}</el-button>
                 </template>
             </template>
             <template v-else>
@@ -258,6 +260,12 @@ Vue.component('form-dialog-component', {
             default: '80px'
         },
         buttons: {
+            type: Array,
+            default: function () {
+                return []
+            }
+        },
+        callBackButtons: {
             type: Array,
             default: function () {
                 return []
@@ -415,8 +423,10 @@ Vue.component('form-dialog-component', {
     data: function () {
         return {
             dataButtons: this.buttons,
+            dataCallBackButtons: this.callBackButtons,
             formVisible: false,
             clickRowData: this.currentRow,
+            dialogVisible: false,
             formData: {},
             rules: {},
             isLoading: false,
@@ -653,7 +663,12 @@ Vue.component('form-dialog-component', {
         cancel: function () {
             this.hide()
         },
-        confirm: function (url) {
+        confirm: function (url, callBack) {
+
+            if(callBack) {
+                this.$emit('call-back-button-click')
+                return
+            }
 
             var _this = this
 
