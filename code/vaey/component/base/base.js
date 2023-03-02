@@ -380,8 +380,8 @@ Vue.component('base-component', {
                 })
             }
         },
-        callBackButtonClick: function() {
-            this.$emit('call-back-button-click')
+        callBackButtonClick: function(ref) {
+            this.$emit('call-back-button-click', ref)
         },
         onDialogShow: function (arguments, fn) {
             //console.log(arguments)

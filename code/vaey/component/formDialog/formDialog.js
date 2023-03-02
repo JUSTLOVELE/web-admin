@@ -227,7 +227,7 @@ var code = `<div>
             <template v-if="dataButtons && dataButtons.length > 0">
                 <el-button size="small" @click="cancel">取 消</el-button>
                  <template v-for="button in dataButtons">
-                    <el-button :disabled="button.disabled" :ref="button.ref" size="small" @click="confirm(button.url, button.callBack)" :type="(button.type) ? button.type : \'primary\'">{{button.label}}</el-button>
+                    <el-button :disabled="button.disabled" :ref="button.ref" size="small" @click="confirm(button.url, button.callBack, button.ref)" :type="(button.type) ? button.type : \'primary\'">{{button.label}}</el-button>
                 </template>
             </template>
             <template v-else>
@@ -663,10 +663,10 @@ Vue.component('form-dialog-component', {
         cancel: function () {
             this.hide()
         },
-        confirm: function (url, callBack) {
+        confirm: function (url, callBack, ref) {
 
             if(callBack) {
-                this.$emit('call-back-button-click')
+                this.$emit('call-back-button-click', ref)
                 return
             }
 
