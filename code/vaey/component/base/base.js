@@ -119,6 +119,7 @@ var baseCode = `
                                     :no-footer="false" 
                                     :title="item.title" 
                                     :buttons="item.buttons"
+                                    :callBackButtons="item.callBackButtons"
                                     :items="item.items" 
                                     :event="item.event"
                                     :module="item.module" 
@@ -126,6 +127,7 @@ var baseCode = `
                                     :form-label-width="item.formLabelWidth" 
                                     @itemEvent="onItemEvent(arguments, item.onItemEvent)"
                                     @show="onDialogShow(arguments, item.onShow)"
+                                    @call-back-button-click="callBackButtonClick"
                                     @close="onDialogClose(item.onClose)"
                                     @valid="onDialogValid(arguments, item.ref, item.submitUrl, item.handler, item.manual, item.params, item.paramFields, item.module)" 
                                    >
@@ -139,6 +141,7 @@ var baseCode = `
                                       :no-footer="false" 
                                       :title="item.title" 
                                       :buttons="item.buttons"
+                                      :callBackButtons="item.callBackButtons"
                                       :items="item.items" 
                                       :event="item.event"
                                       :module="item.module" 
@@ -146,6 +149,7 @@ var baseCode = `
                                       :form-label-width="item.formLabelWidth" 
                                       @itemEvent="onItemEvent(arguments, item.onItemEvent)" 
                                       @show="onDialogShow(arguments, item.onShow)" 
+                                      @call-back-button-click="callBackButtonClick"
                                       @close="onDialogClose(item.onClose)"
                                       @valid="onDialogValid(arguments, item.ref, item.submitUrl, item.handler, item.manual, item.params, item.paramFields, item.module)" 
                                      >
@@ -376,16 +380,20 @@ Vue.component('base-component', {
                 })
             }
         },
+        callBackButtonClick: function(ref) {
+            this.$emit('call-back-button-click', ref)
+        },
         onDialogShow: function (arguments, fn) {
             //console.log(arguments)
             if (typeof fn === 'function') {
                 fn.call(this, arguments[0])
             }
         },
-        onDialogClose: function (fn) {
-            if (typeof fn === 'function') {
-                fn.call(this)
-            }
+        onDialogClose: function () {
+            this.$emit('dialog-close')
+            // if (typeof fn === 'function') {
+            //     fn.call(this)
+            // }
         },
         onItemEvent: function (arguments, fn) {
 
@@ -669,6 +677,9 @@ Vue.component('base-component', {
         },
         setFormDialogTableData(ref, key) {
             this.$refs[ref][0].setFormDialogTableData(key);
+        },
+        hiddenButton(dialogRef, buttonRef, visual) {
+            this.$refs[dialogRef][0].hiddenButton(buttonRef, visual);
         }
     }
 
