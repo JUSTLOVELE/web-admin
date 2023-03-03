@@ -189,7 +189,9 @@ var code = `<div>
                        :multiple="module.uploader.multiple === undefined ? true : module.uploader.multiple"
                        :http-request="handleAddUpload"
                        v-bind="module.uploader.props">
-              <el-button size="small" type="primary">点击上传</el-button>
+              <template v-if="!module.uploader.hiddenUploadButton">
+                    <el-button size="small" type="primary">点击上传</el-button>
+              </template>
               <div slot="tip" class="el-upload__tip">{{module.uploader.label || "　上传图片"}}</div>
             </el-upload>
          </template>

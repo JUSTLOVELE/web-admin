@@ -172,7 +172,9 @@ Vue.component('table-component', {
 			this.$emit("current-row-change", val) //传递一个副本
 		},
 		handleCurrentPageChange: function(val) {
+			
 			this.currentPage = val
+			this.$refs['globalSingleTable'].toggleRowSelection(val, true)
 			this.$emit('current-change', val)
 			// var _this = this
 			// if(val == null) {
