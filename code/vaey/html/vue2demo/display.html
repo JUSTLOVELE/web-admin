@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>患者信息展示</title>
+  <link rel="stylesheet" href="../../lib/element-ui/element.css">
+  <script src="../../lib/vue/vue.js"></script>
+  <script src="../../lib/element-ui/element.js"></script>
+  <script src="../../lib/jquery/jquery3.5.1.js"></script>
+  <script src="patientiInfo.js"></script>
+  <script src="patientExamReport.js"></script>
+  <script src="pathologyExamReport.js"></script>
+  <script src="patientLab.js"></script>
+
+</head>
+<body>
+  <div id="app">
+    <div>
+        <el-menu
+                :default-active="activeIndex2"
+                class="el-menu-demo"
+                mode="horizontal"
+                @select="handleSelect"
+                background-color="#545c64"
+                text-color="#fff"
+                active-text-color="#fff">
+          <el-menu-item index="1">院内详情</el-menu-item>
+    <!--      <el-submenu index="2">-->
+    <!--        <template slot="title">我的工作台</template>-->
+    <!--        <el-menu-item index="2-1">选项1</el-menu-item>-->
+    <!--        <el-menu-item index="2-2">选项2</el-menu-item>-->
+    <!--        <el-menu-item index="2-3">选项3</el-menu-item>-->
+    <!--        <el-submenu index="2-4">-->
+    <!--          <template slot="title">选项4</template>-->
+    <!--          <el-menu-item index="2-4-1">选项1</el-menu-item>-->
+    <!--          <el-menu-item index="2-4-2">选项2</el-menu-item>-->
+    <!--          <el-menu-item index="2-4-3">选项3</el-menu-item>-->
+    <!--        </el-submenu>-->
+    <!--      </el-submenu>-->
+    <!--      <el-menu-item index="3" disabled>消息中心</el-menu-item>-->
+    <!--      <el-menu-item index="4"><a href="https://www.ele.me" target="_blank">订单管理</a></el-menu-item>-->
+        </el-menu>
+    </div>
+    <div style="height: 20px"></div>
+
+    <div>
+      <el-tabs :tab-position="tabPosition" @tab-click="handleClick">
+        <el-tab-pane label="患者基本信息">
+            <patient-info-component :patient-id="patientId"></patient-info-component>
+        </el-tab-pane>
+        <el-tab-pane label="检查报告">
+            <patient-exam-report-component :patient-id="patientId"></patient-exam-report-component>
+        </el-tab-pane>
+        <el-tab-pane label="病理检查报告">
+            <patient-pathology-exam-component :patient-id="patientId"></patient-pathology-exam-component>
+        </el-tab-pane>
+        <el-tab-pane label="检验报告">
+          <patient-lab-component :patient-id="patientId"></patient-lab-component>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+
+
+
+  </div>
+</body>
+
+
+<script>
+  var vm = new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        activeIndex2: '1',
+        tabPosition: 'left',
+        patientId: 'abcd_patient'
+      }
+    },
+    created: function () {
+      console.log("ok")
+    },
+    methods: {
+      handleSelect(key, keyPath) {
+        // console.log(key, keyPath);
+      },
+      handleClick(tab, event) {
+        // console.log(tab)
+        // console.log(tab.label)
+      }
+    }
+  })
+
+</script>
+</html>

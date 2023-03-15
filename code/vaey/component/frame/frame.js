@@ -51,7 +51,7 @@ var code = `
 
 Vue.component('frame-component',{
     template: code,
-    props: ['userName', 'logoTxt', 'menuUrl', 'imgUrl', 'defaultSrc'],
+    props: ['patientId', 'logoTxt', 'menuUrl', 'imgUrl', 'defaultSrc'],
     data: function() {
         return {
             menus: [],
