@@ -1,0 +1,15 @@
+{
+   "name":"yzl",
+   "INP":{
+     "labReports":[
+        {
+          "LAB_TYPE_NAME":"检验类别名称",
+          "SPECIMEN_NAME": "标本名称",
+          "detail":[{
+                "LAB_SUB_ITEM_NAME": "检验细项名称",
+                "MICRO_ITEM_NAME": "标本值"
+          }]
+        }
+     ]
+   }
+}

@@ -55,7 +55,7 @@
             <patient-pathology-exam-component :patient-id="patientId"></patient-pathology-exam-component>
         </el-tab-pane>
         <el-tab-pane label="检验报告">
-          <patient-lab-component :patient-id="patientId"></patient-lab-component>
+          <patient-lab-component :patient="patient"></patient-lab-component>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -73,11 +73,27 @@
       return {
         activeIndex2: '1',
         tabPosition: 'left',
-        patientId: 'abcd_patient'
+        patientId: 'abcd_patient',
+        patient: {
+        },
       }
     },
+    beforeCreate: function () {
+
+    },
     created: function () {
-      console.log("ok")
+
+      var _this = this
+      $.ajax({
+        type: "get",
+        url: './display.data',
+        data: {},
+        dataType: 'json',
+        //async:false,
+        success: function (data) {
+          _this.patient = data;
+        }
+      });
     },
     methods: {
       handleSelect(key, keyPath) {
